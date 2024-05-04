@@ -43,16 +43,16 @@ UART flow control is not supported in version 1.0.0.
 Memory-Mapped Interface
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-.. todo:: Add register table and table ref in req
 .. requirement:: U_REGISTERS_01
 
-   The peripheral shall provide memory-mapped registers described in table TODO.
+   The peripheral shall provide memory-mapped registers described in the table below.
 
-.. requirement:: U_WISHBONE_01
+.. requirement:: U_MEMORY_INTERFACE_01
 
    The peripheral memory-mapped registers shall be accessible through a wishbone interface.
 
-.. list-table::
+  .. _Memory_Mapping_and_Registers:
+.. list-table:: Memory Mapping and Registers
   :header-rows: 1
   :widths: 1 94 1 1 1 1
   
@@ -63,29 +63,29 @@ Memory-Mapped Interface
     - Reset value
     - Section/page
 
-  * - 00000000h
+  * - 0000_0000h
     - Status register (UART_SR)
     - 32
     - R
-    - 00000000h
+    - 0000_0000h
     - :ref:`UART_SR <ARCH_UART_SR>`
-  * - 00000004h
+  * - 0000_0004h
     - Control register (UART_CR)
     - 32
     - R/W
-    - 00000000h
+    - 0000_0000h
     - :ref:`UART_CR <ARCH_UART_CR>`
-  * - 00000008h
+  * - 0000_0008h
     - Receive Data register (UART_RXDR)
     - 32
     - R
-    - 00000000h
+    - 0000_0000h
     - :ref:`UART_RXDR <ARCH_UART_RXDR>`
-  * - 0000000Ch
+  * - 0000_000Ch
     - Transmit Data register (UART_TXDR)
     - 32
     - W
-    - 00000000h
+    - 0000_0000h
     - :ref:`UART_TXDR <ARCH_UART_TXDR>`
 
 .. _ARCH_UART_SR:

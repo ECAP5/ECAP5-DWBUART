@@ -1,6 +1,8 @@
 Architecture Document
 =====================
 
+.. image:: ../assets/architecture.svg
+
 .. todo:: Find a way to add a Table of Contents title here.
 
 .. toctree::

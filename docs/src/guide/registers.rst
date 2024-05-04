@@ -14,29 +14,29 @@ Memory Map and Registers
     - Reset value
     - Section/page
 
-  * - 00000000h
+  * - 0000_0000h
     - Status register (UART_SR)
     - 32
     - R
-    - 00000000h
+    - 0000_0000h
     - :ref:`UART_SR <GUIDE_UART_SR>`
-  * - 00000004h
+  * - 0000_0004h
     - Control register (UART_CR)
     - 32
     - R/W
-    - 00000000h
+    - 0000_0000h
     - :ref:`UART_CR <GUIDE_UART_CR>`
-  * - 00000008h
+  * - 0000_0008h
     - Receive Data register (UART_RXDR)
     - 32
     - R
-    - 00000000h
+    - 0000_0000h
     - :ref:`UART_RXDR <GUIDE_UART_RXDR>`
-  * - 0000000Ch
+  * - 0000_000Ch
     - Transmit Data register (UART_TXDR)
     - 32
     - W
-    - 00000000h
+    - 0000_0000h
     - :ref:`UART_TXDR <GUIDE_UART_TXDR>`
 
 .. _GUIDE_UART_SR:

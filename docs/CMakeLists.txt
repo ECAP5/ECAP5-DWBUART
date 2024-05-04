@@ -8,6 +8,7 @@ if(Sphinx_FOUND)
       "${CMAKE_CURRENT_LIST_DIR}/src/_ext/requirement.py"
       "${CMAKE_CURRENT_LIST_DIR}/src/_static/css/custom.css"
       "${CMAKE_CURRENT_LIST_DIR}/src/assets/logo.svg"
+      "${CMAKE_CURRENT_LIST_DIR}/src/assets/architecture.svg"
       "${CMAKE_CURRENT_LIST_DIR}/src/guide/registers.rst"
       "${CMAKE_CURRENT_LIST_DIR}/src/index.rst"
       "${CMAKE_CURRENT_LIST_DIR}/src/arch/content/uart_sr.rst"
