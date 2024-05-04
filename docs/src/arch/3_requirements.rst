@@ -85,11 +85,11 @@ External Interface Requirements
     - Width
     - Description
 
-  * - rx_i
+  * - uart_rx_i
     - I
     - 1
     - This signal is sampled by the peripheral to receive data
-  * - tx_o
+  * - uart_tx_o
     - O
     - 1
     - This signal is driven by the peripheral to send data
@@ -103,11 +103,11 @@ Functional Requirements
 
 .. requirement:: F_RESET_02
 
-   The tx_o signal shall be asserted while rst_i is asserted.
+   The uart_tx_o signal shall be asserted while rst_i is asserted.
 
 .. requirement:: F_ENABLE_01
 
-   The tx_o signal shall be asserted while the EN field of UART_CR is deasserted.
+   The uart_tx_o signal shall be asserted while the EN field of UART_CR is deasserted.
 
 
 Memory interface
@@ -133,7 +133,7 @@ Receive
 
 .. requirement:: F_RECEIVE_01
 
-   The peripheral shall sample the rx_i signal with an sample interval defined in number of clk_i edges by the field CLK_DIV field of UART_CR.
+   The peripheral shall sample the uart_rx_i signal with an sample interval defined in number of clk_i edges by the field CLK_DIV field of UART_CR.
 
 .. requirement:: F_RECEIVE_02
 
