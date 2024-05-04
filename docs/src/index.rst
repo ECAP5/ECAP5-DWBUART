@@ -1,5 +1,5 @@
 ECAP5-DWBUART
-============
+=============
 
 UART peripheral implementation accessible through a Wishbone bus.
 
@@ -31,7 +31,14 @@ License
 
 .. toctree::
    :hidden:
-   :maxdepth: 4
+   :maxdepth: 8
+   :caption: User guide
+
+   guide/registers
+
+.. toctree::
+   :hidden:
+   :maxdepth: 8
    :caption: Specifications
 
    arch/index
