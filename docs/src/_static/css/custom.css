@@ -91,3 +91,7 @@ footer a:visited {
 .wy-menu-vertical a button.toctree-expand {
   color: #a3A3A3;
 }
+
+svg {
+  width: 100%;
+}
