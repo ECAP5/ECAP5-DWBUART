@@ -11,7 +11,7 @@ if(Sphinx_FOUND)
       "${CMAKE_CURRENT_LIST_DIR}/src/index.rst"
       "${CMAKE_CURRENT_LIST_DIR}/src/arch/index.rst"
       "${CMAKE_CURRENT_LIST_DIR}/src/arch/1_introduction.rst"
-      "${CMAKE_CURRENT_LIST_DIR}/src/arch/2_overall-description.rst"
+      "${CMAKE_CURRENT_LIST_DIR}/src/arch/2_functional-description.rst"
       "${CMAKE_CURRENT_LIST_DIR}/src/arch/3_requirements.rst"
       "${CMAKE_CURRENT_LIST_DIR}/src/arch/4_configuration.rst"
       "${CMAKE_CURRENT_LIST_DIR}/src/arch/5_architecture.rst"

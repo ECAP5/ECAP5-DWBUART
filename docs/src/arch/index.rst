@@ -8,7 +8,7 @@ Architecture Document
    :numbered:
 
    1_introduction
-   2_overall-description
+   2_functional-description
    3_requirements
    4_configuration
    5_architecture
