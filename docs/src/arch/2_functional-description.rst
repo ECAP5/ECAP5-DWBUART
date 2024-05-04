@@ -1,5 +1,5 @@
 Functional Description
-===================
+======================
 
 User needs
 ----------
@@ -36,19 +36,19 @@ Configuration
 
    The stop bits of the peripheral shall be software-configurable.
 
+UART flow control is not supported in version 1.0.0.
+
 Memory-Mapped Interface
 ^^^^^^^^^^^^^^^^^^^^^^^
 
 .. todo:: Add register table and table ref in req
 .. requirement:: U_REGISTERS_01
 
-   The peripheral shall provide memory-mapped registers described in table .
+   The peripheral shall provide memory-mapped registers to control and monitor itself.
 
 .. requirement:: U_WISHBONE_01
 
    The peripheral memory-mapped registers shall be accessible through a wishbone interface.
-
-UART flow control is not supported in version 1.0.0.
 
 Assumptions and Dependencies
 ----------------------------

@@ -1,6 +1,3 @@
-Software Configuration
-======================
-
 .. list-table::
   :header-rows: 1
   :widths: 1 94 1 1 1 1
@@ -35,4 +32,5 @@ Software Configuration
     - 8
     - R
     - 00h
+    -
 

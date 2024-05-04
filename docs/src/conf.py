@@ -35,7 +35,7 @@ html_theme_options = {
     'display_version': True,
     'collapse_navigation': False,
     'titles_only': False,
-    'navigation_depth': 5,
+    'navigation_depth': 10,
     'style_external_links': True
 }
 html_css_files = [
