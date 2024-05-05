@@ -33,7 +33,7 @@ module tb_rx_frontend
   input   logic         cr_s_i,
   input   logic         uart_rx_i,
 
-  output  logic[10:0]   data_o,
+  output  logic[10:0]   packet_o,
   output  logic         output_valid_o
 );
 
@@ -47,7 +47,7 @@ rx_frontend dut (
   .cr_s_i          (cr_s_i),
   .uart_rx_i       (uart_rx_i),
                  
-  .data_o          (data_o),
+  .packet_o        (packet_o),
   .output_valid_o  (output_valid_o)
 );
 

@@ -34,7 +34,7 @@
 
 enum CondId {
   COND_state,
-  COND_data,
+  COND_packet,
   COND_valid,
   __CondIdEnd
 };
@@ -318,7 +318,7 @@ void tb_rx_frontend_valid_packet_7N1(TB_Rx_frontend * tb) {
   //      Checks 
   
   tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_data,  (core->data_o == 0b10100101));
+  tb->check(COND_packet,  (core->packet_o == 0b10100101));
   tb->check(COND_valid, (core->output_valid_o == 1));
 
   //=================================
@@ -337,8 +337,8 @@ void tb_rx_frontend_valid_packet_7N1(TB_Rx_frontend * tb) {
       "Failed to implement the state machine", tb->err_cycles[COND_state]);
 
   CHECK("tb_rx_frontend.valid.7N1_02",
-      tb->conditions[COND_data],
-      "Failed to implement the data output", tb->err_cycles[COND_data]);
+      tb->conditions[COND_packet],
+      "Failed to implement the packet output", tb->err_cycles[COND_packet]);
 
   CHECK("tb_rx_frontend.valid.7N1_03",
       tb->conditions[COND_valid],
@@ -515,7 +515,7 @@ void tb_rx_frontend_valid_packet_7N2(TB_Rx_frontend * tb) {
   //      Checks 
   
   tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_data,  (core->data_o == 0b110100101));
+  tb->check(COND_packet,  (core->packet_o == 0b110100101));
   tb->check(COND_valid, (core->output_valid_o == 1));
 
   //=================================
@@ -534,8 +534,8 @@ void tb_rx_frontend_valid_packet_7N2(TB_Rx_frontend * tb) {
       "Failed to implement the state machine", tb->err_cycles[COND_state]);
 
   CHECK("tb_rx_frontend.valid.7N2_02",
-      tb->conditions[COND_data],
-      "Failed to implement the data output", tb->err_cycles[COND_data]);
+      tb->conditions[COND_packet],
+      "Failed to implement the packet output", tb->err_cycles[COND_packet]);
 
   CHECK("tb_rx_frontend.valid.7N2_03",
       tb->conditions[COND_valid],
@@ -712,7 +712,7 @@ void tb_rx_frontend_valid_packet_7E1(TB_Rx_frontend * tb) {
   //      Checks 
   
   tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_data,  (core->data_o == 0b110100101));
+  tb->check(COND_packet,  (core->packet_o == 0b110100101));
   tb->check(COND_valid, (core->output_valid_o == 1));
 
   //=================================
@@ -731,8 +731,8 @@ void tb_rx_frontend_valid_packet_7E1(TB_Rx_frontend * tb) {
       "Failed to implement the state machine", tb->err_cycles[COND_state]);
 
   CHECK("tb_rx_frontend.valid.7E1_02",
-      tb->conditions[COND_data],
-      "Failed to implement the data output", tb->err_cycles[COND_data]);
+      tb->conditions[COND_packet],
+      "Failed to implement the packet output", tb->err_cycles[COND_packet]);
 
   CHECK("tb_rx_frontend.valid.7E1_03",
       tb->conditions[COND_valid],
@@ -919,7 +919,7 @@ void tb_rx_frontend_valid_packet_7E2(TB_Rx_frontend * tb) {
   //      Checks 
   
   tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_data,  (core->data_o == 0b1110100101));
+  tb->check(COND_packet,  (core->packet_o == 0b1110100101));
   tb->check(COND_valid, (core->output_valid_o == 1));
 
   //=================================
@@ -938,8 +938,8 @@ void tb_rx_frontend_valid_packet_7E2(TB_Rx_frontend * tb) {
       "Failed to implement the state machine", tb->err_cycles[COND_state]);
 
   CHECK("tb_rx_frontend.valid.7E2_02",
-      tb->conditions[COND_data],
-      "Failed to implement the data output", tb->err_cycles[COND_data]);
+      tb->conditions[COND_packet],
+      "Failed to implement the packet output", tb->err_cycles[COND_packet]);
 
   CHECK("tb_rx_frontend.valid.7E2_03",
       tb->conditions[COND_valid],
@@ -1116,7 +1116,7 @@ void tb_rx_frontend_valid_packet_7O1(TB_Rx_frontend * tb) {
   //      Checks 
   
   tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_data,  (core->data_o == 0b100100101));
+  tb->check(COND_packet,  (core->packet_o == 0b100100101));
   tb->check(COND_valid, (core->output_valid_o == 1));
 
   //=================================
@@ -1135,8 +1135,8 @@ void tb_rx_frontend_valid_packet_7O1(TB_Rx_frontend * tb) {
       "Failed to implement the state machine", tb->err_cycles[COND_state]);
 
   CHECK("tb_rx_frontend.valid.7O1_02",
-      tb->conditions[COND_data],
-      "Failed to implement the data output", tb->err_cycles[COND_data]);
+      tb->conditions[COND_packet],
+      "Failed to implement the packet output", tb->err_cycles[COND_packet]);
 
   CHECK("tb_rx_frontend.valid.7O1_03",
       tb->conditions[COND_valid],
@@ -1323,7 +1323,7 @@ void tb_rx_frontend_valid_packet_7O2(TB_Rx_frontend * tb) {
   //      Checks 
   
   tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_data,  (core->data_o == 0b1100100101));
+  tb->check(COND_packet,  (core->packet_o == 0b1100100101));
   tb->check(COND_valid, (core->output_valid_o == 1));
 
   //=================================
@@ -1342,8 +1342,8 @@ void tb_rx_frontend_valid_packet_7O2(TB_Rx_frontend * tb) {
       "Failed to implement the state machine", tb->err_cycles[COND_state]);
 
   CHECK("tb_rx_frontend.valid.7O2_02",
-      tb->conditions[COND_data],
-      "Failed to implement the data output", tb->err_cycles[COND_data]);
+      tb->conditions[COND_packet],
+      "Failed to implement the packet output", tb->err_cycles[COND_packet]);
 
   CHECK("tb_rx_frontend.valid.7O2_03",
       tb->conditions[COND_valid],
@@ -1520,7 +1520,7 @@ void tb_rx_frontend_valid_packet_8N1(TB_Rx_frontend * tb) {
   //      Checks 
   
   tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_data,  (core->data_o == 0b110100101));
+  tb->check(COND_packet,  (core->packet_o == 0b110100101));
   tb->check(COND_valid, (core->output_valid_o == 1));
 
   //=================================
@@ -1539,8 +1539,8 @@ void tb_rx_frontend_valid_packet_8N1(TB_Rx_frontend * tb) {
       "Failed to implement the state machine", tb->err_cycles[COND_state]);
 
   CHECK("tb_rx_frontend.valid.8N1_02",
-      tb->conditions[COND_data],
-      "Failed to implement the data output", tb->err_cycles[COND_data]);
+      tb->conditions[COND_packet],
+      "Failed to implement the packet output", tb->err_cycles[COND_packet]);
 
   CHECK("tb_rx_frontend.valid.8N1_03",
       tb->conditions[COND_valid],
@@ -1727,7 +1727,7 @@ void tb_rx_frontend_valid_packet_8N2(TB_Rx_frontend * tb) {
   //      Checks 
   
   tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_data,  (core->data_o == 0b1110100101));
+  tb->check(COND_packet,  (core->packet_o == 0b1110100101));
   tb->check(COND_valid, (core->output_valid_o == 1));
 
   //=================================
@@ -1746,8 +1746,8 @@ void tb_rx_frontend_valid_packet_8N2(TB_Rx_frontend * tb) {
       "Failed to implement the state machine", tb->err_cycles[COND_state]);
 
   CHECK("tb_rx_frontend.valid.8N2_02",
-      tb->conditions[COND_data],
-      "Failed to implement the data output", tb->err_cycles[COND_data]);
+      tb->conditions[COND_packet],
+      "Failed to implement the packet output", tb->err_cycles[COND_packet]);
 
   CHECK("tb_rx_frontend.valid.8N2_03",
       tb->conditions[COND_valid],
@@ -1934,7 +1934,7 @@ void tb_rx_frontend_valid_packet_8E1(TB_Rx_frontend * tb) {
   //      Checks 
   
   tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_data,  (core->data_o == 0b1010100101));
+  tb->check(COND_packet,  (core->packet_o == 0b1010100101));
   tb->check(COND_valid, (core->output_valid_o == 1));
 
   //=================================
@@ -1953,8 +1953,8 @@ void tb_rx_frontend_valid_packet_8E1(TB_Rx_frontend * tb) {
       "Failed to implement the state machine", tb->err_cycles[COND_state]);
 
   CHECK("tb_rx_frontend.valid.8E1_02",
-      tb->conditions[COND_data],
-      "Failed to implement the data output", tb->err_cycles[COND_data]);
+      tb->conditions[COND_packet],
+      "Failed to implement the packet output", tb->err_cycles[COND_packet]);
 
   CHECK("tb_rx_frontend.valid.8E1_03",
       tb->conditions[COND_valid],
@@ -2151,7 +2151,7 @@ void tb_rx_frontend_valid_packet_8E2(TB_Rx_frontend * tb) {
   //      Checks 
   
   tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_data,  (core->data_o == 0b11010100101));
+  tb->check(COND_packet,  (core->packet_o == 0b11010100101));
   tb->check(COND_valid, (core->output_valid_o == 1));
 
   //=================================
@@ -2170,8 +2170,8 @@ void tb_rx_frontend_valid_packet_8E2(TB_Rx_frontend * tb) {
       "Failed to implement the state machine", tb->err_cycles[COND_state]);
 
   CHECK("tb_rx_frontend.valid.8E2_02",
-      tb->conditions[COND_data],
-      "Failed to implement the data output", tb->err_cycles[COND_data]);
+      tb->conditions[COND_packet],
+      "Failed to implement the packet output", tb->err_cycles[COND_packet]);
 
   CHECK("tb_rx_frontend.valid.8E2_03",
       tb->conditions[COND_valid],
@@ -2358,7 +2358,7 @@ void tb_rx_frontend_valid_packet_8O1(TB_Rx_frontend * tb) {
   //      Checks 
   
   tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_data,  (core->data_o == 0b1110100101));
+  tb->check(COND_packet,  (core->packet_o == 0b1110100101));
   tb->check(COND_valid, (core->output_valid_o == 1));
 
   //=================================
@@ -2377,8 +2377,8 @@ void tb_rx_frontend_valid_packet_8O1(TB_Rx_frontend * tb) {
       "Failed to implement the state machine", tb->err_cycles[COND_state]);
 
   CHECK("tb_rx_frontend.valid.8O1_02",
-      tb->conditions[COND_data],
-      "Failed to implement the data output", tb->err_cycles[COND_data]);
+      tb->conditions[COND_packet],
+      "Failed to implement the packet output", tb->err_cycles[COND_packet]);
 
   CHECK("tb_rx_frontend.valid.8O1_03",
       tb->conditions[COND_valid],
@@ -2575,7 +2575,7 @@ void tb_rx_frontend_valid_packet_8O2(TB_Rx_frontend * tb) {
   //      Checks 
   
   tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_data,  (core->data_o == 0b11110100101));
+  tb->check(COND_packet,  (core->packet_o == 0b11110100101));
   tb->check(COND_valid, (core->output_valid_o == 1));
 
   //=================================
@@ -2594,8 +2594,8 @@ void tb_rx_frontend_valid_packet_8O2(TB_Rx_frontend * tb) {
       "Failed to implement the state machine", tb->err_cycles[COND_state]);
 
   CHECK("tb_rx_frontend.valid.8O2_02",
-      tb->conditions[COND_data],
-      "Failed to implement the data output", tb->err_cycles[COND_data]);
+      tb->conditions[COND_packet],
+      "Failed to implement the packet output", tb->err_cycles[COND_packet]);
 
   CHECK("tb_rx_frontend.valid.8O2_03",
       tb->conditions[COND_valid],
@@ -2632,12 +2632,12 @@ void tb_rx_frontend_baudrate(TB_Rx_frontend * tb) {
   //=================================
   //      Tick (2-4)
   
-  tb->n_tick(3);
+  tb->n_tick(3); // 3 cycle delay due to metastability countermeasures
 
   //=================================
-  //      Tick (5-7)
+  //      Tick (5)
   
-  tb->n_tick(3); // 3 cycle delay due to metastability countermeasures
+  tb->n_tick(1); // 1 cycle delay between idle and start
 
   //`````````````````````````````````
   //      Checks 
@@ -2646,152 +2646,152 @@ void tb_rx_frontend_baudrate(TB_Rx_frontend * tb) {
   tb->check(COND_valid, (core->output_valid_o == 0));
 
   //=================================
-  //      Tick (8-53)
-  
-  tb->n_tick(46);
-
-  //=================================
-  //      Tick (54-56)
-  
-  tb->n_tick(3); // 3 cycle delay due to metastability countermeasures
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_valid, (core->output_valid_o == 0));
-
-  //=================================
-  //      Tick (57-103)
-  
-  tb->n_tick(47);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (104-153)
-  
-  tb->n_tick(50);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_valid, (core->output_valid_o == 0));
-
-  //=================================
-  //      Tick (154-203)
-  
-  tb->n_tick(50);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (204-303)
-  
-  tb->n_tick(100);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (304-403)
-  
-  tb->n_tick(100);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (404-503)
-  
-  tb->n_tick(100);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (504-603)
-  
-  tb->n_tick(100);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (604-703)
-  
-  tb->n_tick(100);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (704-803)
-  
-  tb->n_tick(100);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (804-853)
-  
-  tb->n_tick(50);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_valid, (core->output_valid_o == 0));
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (854)
-  
-  tb->n_tick(1);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_data,  (core->data_o == 0b10100101));
-  tb->check(COND_valid, (core->output_valid_o == 1));
-
-  //=================================
-  //      Tick (855-903)
+  //      Tick (6-54)
   
   tb->n_tick(49);
 
   //`````````````````````````````````
   //      Checks 
   
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
+  tb->check(COND_valid, (core->output_valid_o == 0));
+
+  //=================================
+  //      Tick (55-104)
+  
+  tb->n_tick(50);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (105-154)
+  
+  tb->n_tick(50);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
+  tb->check(COND_valid, (core->output_valid_o == 0));
+
+  //=================================
+  //      Tick (155-204)
+  
+  tb->n_tick(50);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (205-304)
+  
+  tb->n_tick(100);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (305-404)
+  
+  tb->n_tick(100);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (405-504)
+  
+  tb->n_tick(100);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (505-604)
+  
+  tb->n_tick(100);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (605-704)
+  
+  tb->n_tick(100);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (705-804)
+  
+  tb->n_tick(100);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
+  tb->check(COND_valid, (core->output_valid_o == 0));
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (805-854)
+  
+  tb->n_tick(50);
+
+  //=================================
+  //      Tick (855-854)
+  
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
+  tb->check(COND_packet,  (core->packet_o == 0b10100101));
+  tb->check(COND_valid, (core->output_valid_o == 1));
+
+  //=================================
+  //      Tick (955-904)
+  
+  tb->n_tick(50);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (905)
+  
+  tb->n_tick(1);
+
+  //=================================
+  //      Tick (906-954)
+  
+  tb->n_tick(49);
+
   //`````````````````````````````````
   //      Formal Checks 
   
@@ -2800,8 +2800,8 @@ void tb_rx_frontend_baudrate(TB_Rx_frontend * tb) {
       "Failed to implement the state machine", tb->err_cycles[COND_state]);
 
   CHECK("tb_rx_frontend.valid.7N1_02",
-      tb->conditions[COND_data],
-      "Failed to implement the data output", tb->err_cycles[COND_data]);
+      tb->conditions[COND_packet],
+      "Failed to implement the packet output", tb->err_cycles[COND_packet]);
 
   CHECK("tb_rx_frontend.valid.7N1_03",
       tb->conditions[COND_valid],
