@@ -57,7 +57,7 @@ logic uart_rx_q, uart_rx_qq, uart_rx_qqq;
 logic[15:0] half_baud_cnt_d, half_baud_cnt_q, 
                  baud_cnt_d,      baud_cnt_q;
 
-logic[MAX_PACKET_SIZE-1:0]  data_cnt_d, data_cnt_q;
+logic[MAX_PACKET_SIZE:0]  data_cnt_d, data_cnt_q;
 
 logic[MAX_PACKET_SIZE-1:0] data_q;
 
@@ -93,8 +93,8 @@ always_comb begin : state_machine
 end
 
 always_comb begin
-  packet_size = MIN_PACKET_SIZE + {3'b0, cr_ds_i} + {2'b0, cr_p_i} + {3'b0, cr_s_i};
-  data_cnt_done = data_cnt_q[packet_size - 1];
+  packet_size = MIN_PACKET_SIZE + {3'b0, cr_ds_i} + {2'b0, (cr_p_i == '0 ? 1'b0 : 1'b1)} + {3'b0, cr_s_i};
+  data_cnt_done = data_cnt_q[packet_size];
 end
 
 always_comb begin : counters
@@ -111,7 +111,7 @@ always_comb begin : counters
       end
     end
     START: begin
-      half_baud_cnt_d = half_baud_cnt_q - 2;
+      half_baud_cnt_d = half_baud_cnt_q - 1;
       // We initialize the data counter when reaching the middle of the 
       // start bit
       if(half_baud_cnt_q == '0) begin
@@ -125,20 +125,16 @@ always_comb begin : counters
         // reset the baud counter
         baud_cnt_d = cr_clk_div_i - 1;
         // decrement the data counter
-        data_cnt_d = {data_cnt_d[MAX_PACKET_SIZE-2:0], 1'b0};
+        data_cnt_d = {data_cnt_d[MAX_PACKET_SIZE-1:0], 1'b0};
       end else begin
         baud_cnt_d = baud_cnt_q - 1;
+      end
+      if(data_cnt_done) begin
+        data_cnt_d = '0;
       end
     end
     default: begin end
   endcase
-end
-
-always_comb begin : output_valid
-  output_valid_d = 0;
-  if(state_q == DATA && data_cnt_done) begin
-    output_valid_d = 1;
-  end
 end
 
 always_ff @(posedge clk_i) begin
@@ -179,7 +175,7 @@ always_ff @(posedge clk_i) begin
   end
 end
 
-assign data_o = data_q;
-assign output_valid_o = output_valid_q;
+assign data_o = data_q >> (MAX_PACKET_SIZE - packet_size);
+assign output_valid_o = data_cnt_done;
 
 endmodule // rx_frontend

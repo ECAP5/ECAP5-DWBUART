@@ -34,6 +34,7 @@
 
 enum CondId {
   COND_state,
+  COND_data,
   COND_valid,
   __CondIdEnd
 };
@@ -51,7 +52,8 @@ enum TestcaseId {
   T_VALID_8E1 = 10,
   T_VALID_8E2 = 11,
   T_VALID_8O1 = 12,
-  T_VALID_8O2 = 13
+  T_VALID_8O2 = 13,
+  T_BAUDRATE = 14
 };
 
 enum StateId {
@@ -160,9 +162,6 @@ void tb_rx_frontend_valid_packet_7N1(TB_Rx_frontend * tb) {
   Vtb_rx_frontend * core = tb->core;
   core->testcase = T_VALID_7N1;
 
-  // The following actions are performed in this test :
-  //    tick 0. Nothing (core is in IDLE)
-
   //=================================
   //      Tick (0)
   
@@ -194,10 +193,19 @@ void tb_rx_frontend_valid_packet_7N1(TB_Rx_frontend * tb) {
   //`````````````````````````````````
   //      Checks 
   
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_IDLE));
+  tb->check(COND_valid, (core->output_valid_o == 0));
+
   //=================================
   //      Tick (4-5)
   
   tb->n_tick(2);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_START));
+  tb->check(COND_valid, (core->output_valid_o == 0));
 
   //`````````````````````````````````
   //      Set inputs
@@ -212,6 +220,9 @@ void tb_rx_frontend_valid_packet_7N1(TB_Rx_frontend * tb) {
   //`````````````````````````````````
   //      Checks 
   
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
+  tb->check(COND_valid, (core->output_valid_o == 0));
+
   //=================================
   //      Tick (8-9)
   
@@ -223,17 +234,9 @@ void tb_rx_frontend_valid_packet_7N1(TB_Rx_frontend * tb) {
   core->uart_rx_i = 0;
 
   //=================================
-  //      Tick (10-11)
+  //      Tick (10-13)
   
-  tb->n_tick(2);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  //=================================
-  //      Tick (12-13)
-  
-  tb->n_tick(2);
+  tb->n_tick(4);
 
   //`````````````````````````````````
   //      Set inputs
@@ -241,17 +244,9 @@ void tb_rx_frontend_valid_packet_7N1(TB_Rx_frontend * tb) {
   core->uart_rx_i = 1;
 
   //=================================
-  //      Tick (14-15)
+  //      Tick (14-17)
   
-  tb->n_tick(2);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  //=================================
-  //      Tick (16-17)
-  
-  tb->n_tick(2);
+  tb->n_tick(4);
 
   //`````````````````````````````````
   //      Set inputs
@@ -259,17 +254,9 @@ void tb_rx_frontend_valid_packet_7N1(TB_Rx_frontend * tb) {
   core->uart_rx_i = 0;
 
   //=================================
-  //      Tick (18-19)
+  //      Tick (18-21)
   
-  tb->n_tick(2);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  //=================================
-  //      Tick (20-21)
-  
-  tb->n_tick(2);
+  tb->n_tick(4);
 
   //`````````````````````````````````
   //      Set inputs
@@ -277,17 +264,9 @@ void tb_rx_frontend_valid_packet_7N1(TB_Rx_frontend * tb) {
   core->uart_rx_i = 0;
 
   //=================================
-  //      Tick (22-23)
+  //      Tick (22-25)
   
-  tb->n_tick(2);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  //=================================
-  //      Tick (24-25)
-  
-  tb->n_tick(2);
+  tb->n_tick(4);
 
   //`````````````````````````````````
   //      Set inputs
@@ -295,17 +274,9 @@ void tb_rx_frontend_valid_packet_7N1(TB_Rx_frontend * tb) {
   core->uart_rx_i = 1;
 
   //=================================
-  //      Tick (26-27)
+  //      Tick (26-29)
   
-  tb->n_tick(2);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  //=================================
-  //      Tick (28-29)
-  
-  tb->n_tick(2);
+  tb->n_tick(4);
 
   //`````````````````````````````````
   //      Set inputs
@@ -313,17 +284,9 @@ void tb_rx_frontend_valid_packet_7N1(TB_Rx_frontend * tb) {
   core->uart_rx_i = 0;
 
   //=================================
-  //      Tick (30-31)
+  //      Tick (30-33)
   
-  tb->n_tick(2);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  //=================================
-  //      Tick (32-33)
-  
-  tb->n_tick(2);
+  tb->n_tick(4);
 
   //`````````````````````````````````
   //      Set inputs
@@ -331,17 +294,15 @@ void tb_rx_frontend_valid_packet_7N1(TB_Rx_frontend * tb) {
   core->uart_rx_i = 1;
 
   //=================================
-  //      Tick (34-35)
+  //      Tick (34-37)
   
-  tb->n_tick(2);
+  tb->n_tick(4);
 
   //`````````````````````````````````
   //      Checks 
   
-  //=================================
-  //      Tick (36-37)
-  
-  tb->n_tick(2);
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
+  tb->check(COND_valid, (core->output_valid_o == 0));
 
   //`````````````````````````````````
   //      Set inputs
@@ -349,67 +310,2506 @@ void tb_rx_frontend_valid_packet_7N1(TB_Rx_frontend * tb) {
   core->uart_rx_i = 0;
 
   //=================================
-  //      Tick (38-39)
+  //      Tick (38)
   
-  tb->n_tick(8);
+  tb->n_tick(1);
 
   //`````````````````````````````````
   //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
+  tb->check(COND_data,  (core->data_o == 0b10100101));
+  tb->check(COND_valid, (core->output_valid_o == 1));
+
+  //=================================
+  //      Tick (39-41)
+  
+  tb->n_tick(3);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  //`````````````````````````````````
+  //      Formal Checks 
+  
+  CHECK("tb_rx_frontend.valid.7N1_01",
+      tb->conditions[COND_state],
+      "Failed to implement the state machine", tb->err_cycles[COND_state]);
+
+  CHECK("tb_rx_frontend.valid.7N1_02",
+      tb->conditions[COND_data],
+      "Failed to implement the data output", tb->err_cycles[COND_data]);
+
+  CHECK("tb_rx_frontend.valid.7N1_03",
+      tb->conditions[COND_valid],
+      "Failed to implement the valid signal", tb->err_cycles[COND_valid]);
 }
 
 void tb_rx_frontend_valid_packet_7N2(TB_Rx_frontend * tb) {
   Vtb_rx_frontend * core = tb->core;
   core->testcase = T_VALID_7N2;
+
+  //=================================
+  //      Tick (0)
+  
+  tb->reset();
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->cr_clk_div_i = 4;
+  core->cr_ds_i = 0;
+  core->cr_p_i = 0;
+  core->cr_s_i = 1;
+
+  //=================================
+  //      Tick (1)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (2-3)
+  
+  tb->n_tick(2);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_IDLE));
+  tb->check(COND_valid, (core->output_valid_o == 0));
+
+  //=================================
+  //      Tick (4-5)
+  
+  tb->n_tick(2);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_START));
+  tb->check(COND_valid, (core->output_valid_o == 0));
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (6-7)
+  
+  tb->n_tick(2);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
+  tb->check(COND_valid, (core->output_valid_o == 0));
+
+  //=================================
+  //      Tick (8-9)
+  
+  tb->n_tick(2);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (10-13)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (14-17)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (18-21)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (22-25)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (26-29)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (30-33)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (34-37)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (38-41)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
+  tb->check(COND_valid, (core->output_valid_o == 0));
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (42)
+  
+  tb->n_tick(1);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
+  tb->check(COND_data,  (core->data_o == 0b110100101));
+  tb->check(COND_valid, (core->output_valid_o == 1));
+
+  //=================================
+  //      Tick (43-45)
+  
+  tb->n_tick(3);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  //`````````````````````````````````
+  //      Formal Checks 
+  
+  CHECK("tb_rx_frontend.valid.7N2_01",
+      tb->conditions[COND_state],
+      "Failed to implement the state machine", tb->err_cycles[COND_state]);
+
+  CHECK("tb_rx_frontend.valid.7N2_02",
+      tb->conditions[COND_data],
+      "Failed to implement the data output", tb->err_cycles[COND_data]);
+
+  CHECK("tb_rx_frontend.valid.7N2_03",
+      tb->conditions[COND_valid],
+      "Failed to implement the valid signal", tb->err_cycles[COND_valid]);
 }
 
 void tb_rx_frontend_valid_packet_7E1(TB_Rx_frontend * tb) {
   Vtb_rx_frontend * core = tb->core;
   core->testcase = T_VALID_7E1;
+
+  //=================================
+  //      Tick (0)
+  
+  tb->reset();
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->cr_clk_div_i = 4;
+  core->cr_ds_i = 0;
+  core->cr_p_i = 2;
+  core->cr_s_i = 0;
+
+  //=================================
+  //      Tick (1)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (2-3)
+  
+  tb->n_tick(2);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_IDLE));
+  tb->check(COND_valid, (core->output_valid_o == 0));
+
+  //=================================
+  //      Tick (4-5)
+  
+  tb->n_tick(2);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_START));
+  tb->check(COND_valid, (core->output_valid_o == 0));
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (6-7)
+  
+  tb->n_tick(2);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
+  tb->check(COND_valid, (core->output_valid_o == 0));
+
+  //=================================
+  //      Tick (8-9)
+  
+  tb->n_tick(2);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (10-13)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (14-17)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (18-21)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (22-25)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (26-29)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (30-33)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (34-37)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (38-41)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
+  tb->check(COND_valid, (core->output_valid_o == 0));
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (42)
+  
+  tb->n_tick(1);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
+  tb->check(COND_data,  (core->data_o == 0b110100101));
+  tb->check(COND_valid, (core->output_valid_o == 1));
+
+  //=================================
+  //      Tick (43-45)
+  
+  tb->n_tick(3);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  //`````````````````````````````````
+  //      Formal Checks 
+  
+  CHECK("tb_rx_frontend.valid.7E1_01",
+      tb->conditions[COND_state],
+      "Failed to implement the state machine", tb->err_cycles[COND_state]);
+
+  CHECK("tb_rx_frontend.valid.7E1_02",
+      tb->conditions[COND_data],
+      "Failed to implement the data output", tb->err_cycles[COND_data]);
+
+  CHECK("tb_rx_frontend.valid.7E1_03",
+      tb->conditions[COND_valid],
+      "Failed to implement the valid signal", tb->err_cycles[COND_valid]);
 }
 
 void tb_rx_frontend_valid_packet_7E2(TB_Rx_frontend * tb) {
   Vtb_rx_frontend * core = tb->core;
   core->testcase = T_VALID_7E2;
+
+  //=================================
+  //      Tick (0)
+  
+  tb->reset();
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->cr_clk_div_i = 4;
+  core->cr_ds_i = 0;
+  core->cr_p_i = 2;
+  core->cr_s_i = 1;
+
+  //=================================
+  //      Tick (1)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (2-3)
+  
+  tb->n_tick(2);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_IDLE));
+  tb->check(COND_valid, (core->output_valid_o == 0));
+
+  //=================================
+  //      Tick (4-5)
+  
+  tb->n_tick(2);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_START));
+  tb->check(COND_valid, (core->output_valid_o == 0));
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (6-7)
+  
+  tb->n_tick(2);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
+  tb->check(COND_valid, (core->output_valid_o == 0));
+
+  //=================================
+  //      Tick (8-9)
+  
+  tb->n_tick(2);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (10-13)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (14-17)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (18-21)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (22-25)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (26-29)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (30-33)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (34-37)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (38-41)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (42-45)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
+  tb->check(COND_valid, (core->output_valid_o == 0));
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (46)
+  
+  tb->n_tick(1);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
+  tb->check(COND_data,  (core->data_o == 0b1110100101));
+  tb->check(COND_valid, (core->output_valid_o == 1));
+
+  //=================================
+  //      Tick (47-49)
+  
+  tb->n_tick(3);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  //`````````````````````````````````
+  //      Formal Checks 
+  
+  CHECK("tb_rx_frontend.valid.7E2_01",
+      tb->conditions[COND_state],
+      "Failed to implement the state machine", tb->err_cycles[COND_state]);
+
+  CHECK("tb_rx_frontend.valid.7E2_02",
+      tb->conditions[COND_data],
+      "Failed to implement the data output", tb->err_cycles[COND_data]);
+
+  CHECK("tb_rx_frontend.valid.7E2_03",
+      tb->conditions[COND_valid],
+      "Failed to implement the valid signal", tb->err_cycles[COND_valid]);
 }
 
 void tb_rx_frontend_valid_packet_7O1(TB_Rx_frontend * tb) {
   Vtb_rx_frontend * core = tb->core;
   core->testcase = T_VALID_7O1;
+
+  //=================================
+  //      Tick (0)
+  
+  tb->reset();
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->cr_clk_div_i = 4;
+  core->cr_ds_i = 0;
+  core->cr_p_i = 1;
+  core->cr_s_i = 0;
+
+  //=================================
+  //      Tick (1)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (2-3)
+  
+  tb->n_tick(2);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_IDLE));
+  tb->check(COND_valid, (core->output_valid_o == 0));
+
+  //=================================
+  //      Tick (4-5)
+  
+  tb->n_tick(2);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_START));
+  tb->check(COND_valid, (core->output_valid_o == 0));
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (6-7)
+  
+  tb->n_tick(2);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
+  tb->check(COND_valid, (core->output_valid_o == 0));
+
+  //=================================
+  //      Tick (8-9)
+  
+  tb->n_tick(2);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (10-13)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (14-17)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (18-21)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (22-25)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (26-29)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (30-33)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (34-37)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (38-41)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
+  tb->check(COND_valid, (core->output_valid_o == 0));
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (42)
+  
+  tb->n_tick(1);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
+  tb->check(COND_data,  (core->data_o == 0b100100101));
+  tb->check(COND_valid, (core->output_valid_o == 1));
+
+  //=================================
+  //      Tick (43-45)
+  
+  tb->n_tick(3);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  //`````````````````````````````````
+  //      Formal Checks 
+  
+  CHECK("tb_rx_frontend.valid.7O1_01",
+      tb->conditions[COND_state],
+      "Failed to implement the state machine", tb->err_cycles[COND_state]);
+
+  CHECK("tb_rx_frontend.valid.7O1_02",
+      tb->conditions[COND_data],
+      "Failed to implement the data output", tb->err_cycles[COND_data]);
+
+  CHECK("tb_rx_frontend.valid.7O1_03",
+      tb->conditions[COND_valid],
+      "Failed to implement the valid signal", tb->err_cycles[COND_valid]);
 }
 
 void tb_rx_frontend_valid_packet_7O2(TB_Rx_frontend * tb) {
   Vtb_rx_frontend * core = tb->core;
   core->testcase = T_VALID_7O2;
+
+  //=================================
+  //      Tick (0)
+  
+  tb->reset();
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->cr_clk_div_i = 4;
+  core->cr_ds_i = 0;
+  core->cr_p_i = 1;
+  core->cr_s_i = 1;
+
+  //=================================
+  //      Tick (1)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (2-3)
+  
+  tb->n_tick(2);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_IDLE));
+  tb->check(COND_valid, (core->output_valid_o == 0));
+
+  //=================================
+  //      Tick (4-5)
+  
+  tb->n_tick(2);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_START));
+  tb->check(COND_valid, (core->output_valid_o == 0));
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (6-7)
+  
+  tb->n_tick(2);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
+  tb->check(COND_valid, (core->output_valid_o == 0));
+
+  //=================================
+  //      Tick (8-9)
+  
+  tb->n_tick(2);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (10-13)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (14-17)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (18-21)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (22-25)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (26-29)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (30-33)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (34-37)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (38-41)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (42-45)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
+  tb->check(COND_valid, (core->output_valid_o == 0));
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (46)
+  
+  tb->n_tick(1);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
+  tb->check(COND_data,  (core->data_o == 0b1100100101));
+  tb->check(COND_valid, (core->output_valid_o == 1));
+
+  //=================================
+  //      Tick (47-49)
+  
+  tb->n_tick(3);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  //`````````````````````````````````
+  //      Formal Checks 
+  
+  CHECK("tb_rx_frontend.valid.7O2_01",
+      tb->conditions[COND_state],
+      "Failed to implement the state machine", tb->err_cycles[COND_state]);
+
+  CHECK("tb_rx_frontend.valid.7O2_02",
+      tb->conditions[COND_data],
+      "Failed to implement the data output", tb->err_cycles[COND_data]);
+
+  CHECK("tb_rx_frontend.valid.7O2_03",
+      tb->conditions[COND_valid],
+      "Failed to implement the valid signal", tb->err_cycles[COND_valid]);
 }
 
 void tb_rx_frontend_valid_packet_8N1(TB_Rx_frontend * tb) {
   Vtb_rx_frontend * core = tb->core;
   core->testcase = T_VALID_8N1;
+
+  //=================================
+  //      Tick (0)
+  
+  tb->reset();
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->cr_clk_div_i = 4;
+  core->cr_ds_i = 1;
+  core->cr_p_i = 0;
+  core->cr_s_i = 0;
+
+  //=================================
+  //      Tick (1)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (2-3)
+  
+  tb->n_tick(2);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_IDLE));
+  tb->check(COND_valid, (core->output_valid_o == 0));
+
+  //=================================
+  //      Tick (4-5)
+  
+  tb->n_tick(2);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_START));
+  tb->check(COND_valid, (core->output_valid_o == 0));
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (6-7)
+  
+  tb->n_tick(2);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
+  tb->check(COND_valid, (core->output_valid_o == 0));
+
+  //=================================
+  //      Tick (8-9)
+  
+  tb->n_tick(2);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (10-13)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (14-17)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (18-21)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (22-25)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (26-29)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (30-33)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (34-37)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (38-41)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
+  tb->check(COND_valid, (core->output_valid_o == 0));
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (42)
+  
+  tb->n_tick(1);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
+  tb->check(COND_data,  (core->data_o == 0b110100101));
+  tb->check(COND_valid, (core->output_valid_o == 1));
+
+  //=================================
+  //      Tick (43-45)
+  
+  tb->n_tick(3);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  //`````````````````````````````````
+  //      Formal Checks 
+  
+  CHECK("tb_rx_frontend.valid.8N1_01",
+      tb->conditions[COND_state],
+      "Failed to implement the state machine", tb->err_cycles[COND_state]);
+
+  CHECK("tb_rx_frontend.valid.8N1_02",
+      tb->conditions[COND_data],
+      "Failed to implement the data output", tb->err_cycles[COND_data]);
+
+  CHECK("tb_rx_frontend.valid.8N1_03",
+      tb->conditions[COND_valid],
+      "Failed to implement the valid signal", tb->err_cycles[COND_valid]);
 }
 
 void tb_rx_frontend_valid_packet_8N2(TB_Rx_frontend * tb) {
   Vtb_rx_frontend * core = tb->core;
   core->testcase = T_VALID_8N2;
+
+  //=================================
+  //      Tick (0)
+  
+  tb->reset();
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->cr_clk_div_i = 4;
+  core->cr_ds_i = 1;
+  core->cr_p_i = 0;
+  core->cr_s_i = 1;
+
+  //=================================
+  //      Tick (1)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (2-3)
+  
+  tb->n_tick(2);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_IDLE));
+  tb->check(COND_valid, (core->output_valid_o == 0));
+
+  //=================================
+  //      Tick (4-5)
+  
+  tb->n_tick(2);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_START));
+  tb->check(COND_valid, (core->output_valid_o == 0));
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (6-7)
+  
+  tb->n_tick(2);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
+  tb->check(COND_valid, (core->output_valid_o == 0));
+
+  //=================================
+  //      Tick (8-9)
+  
+  tb->n_tick(2);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (10-13)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (14-17)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (18-21)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (22-25)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (26-29)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (30-33)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (34-37)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (38-41)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (42-45)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
+  tb->check(COND_valid, (core->output_valid_o == 0));
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (46)
+  
+  tb->n_tick(1);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
+  tb->check(COND_data,  (core->data_o == 0b1110100101));
+  tb->check(COND_valid, (core->output_valid_o == 1));
+
+  //=================================
+  //      Tick (47-49)
+  
+  tb->n_tick(3);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  //`````````````````````````````````
+  //      Formal Checks 
+  
+  CHECK("tb_rx_frontend.valid.8N2_01",
+      tb->conditions[COND_state],
+      "Failed to implement the state machine", tb->err_cycles[COND_state]);
+
+  CHECK("tb_rx_frontend.valid.8N2_02",
+      tb->conditions[COND_data],
+      "Failed to implement the data output", tb->err_cycles[COND_data]);
+
+  CHECK("tb_rx_frontend.valid.8N2_03",
+      tb->conditions[COND_valid],
+      "Failed to implement the valid signal", tb->err_cycles[COND_valid]);
 }
 
 void tb_rx_frontend_valid_packet_8E1(TB_Rx_frontend * tb) {
   Vtb_rx_frontend * core = tb->core;
   core->testcase = T_VALID_8E1;
+
+  //=================================
+  //      Tick (0)
+  
+  tb->reset();
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->cr_clk_div_i = 4;
+  core->cr_ds_i = 1;
+  core->cr_p_i = 2;
+  core->cr_s_i = 0;
+
+  //=================================
+  //      Tick (1)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (2-3)
+  
+  tb->n_tick(2);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_IDLE));
+  tb->check(COND_valid, (core->output_valid_o == 0));
+
+  //=================================
+  //      Tick (4-5)
+  
+  tb->n_tick(2);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_START));
+  tb->check(COND_valid, (core->output_valid_o == 0));
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (6-7)
+  
+  tb->n_tick(2);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
+  tb->check(COND_valid, (core->output_valid_o == 0));
+
+  //=================================
+  //      Tick (8-9)
+  
+  tb->n_tick(2);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (10-13)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (14-17)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (18-21)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (22-25)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (26-29)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (30-33)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (34-37)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (38-41)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (42-45)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
+  tb->check(COND_valid, (core->output_valid_o == 0));
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (46)
+  
+  tb->n_tick(1);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
+  tb->check(COND_data,  (core->data_o == 0b1010100101));
+  tb->check(COND_valid, (core->output_valid_o == 1));
+
+  //=================================
+  //      Tick (47-49)
+  
+  tb->n_tick(3);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  //`````````````````````````````````
+  //      Formal Checks 
+  
+  CHECK("tb_rx_frontend.valid.8E1_01",
+      tb->conditions[COND_state],
+      "Failed to implement the state machine", tb->err_cycles[COND_state]);
+
+  CHECK("tb_rx_frontend.valid.8E1_02",
+      tb->conditions[COND_data],
+      "Failed to implement the data output", tb->err_cycles[COND_data]);
+
+  CHECK("tb_rx_frontend.valid.8E1_03",
+      tb->conditions[COND_valid],
+      "Failed to implement the valid signal", tb->err_cycles[COND_valid]);
 }
 
 void tb_rx_frontend_valid_packet_8E2(TB_Rx_frontend * tb) {
   Vtb_rx_frontend * core = tb->core;
   core->testcase = T_VALID_8E2;
+
+  //=================================
+  //      Tick (0)
+  
+  tb->reset();
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->cr_clk_div_i = 4;
+  core->cr_ds_i = 1;
+  core->cr_p_i = 2;
+  core->cr_s_i = 1;
+
+  //=================================
+  //      Tick (1)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (2-3)
+  
+  tb->n_tick(2);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_IDLE));
+  tb->check(COND_valid, (core->output_valid_o == 0));
+
+  //=================================
+  //      Tick (4-5)
+  
+  tb->n_tick(2);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_START));
+  tb->check(COND_valid, (core->output_valid_o == 0));
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (6-7)
+  
+  tb->n_tick(2);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
+  tb->check(COND_valid, (core->output_valid_o == 0));
+
+  //=================================
+  //      Tick (8-9)
+  
+  tb->n_tick(2);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (10-13)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (14-17)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (18-21)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (22-25)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (26-29)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (30-33)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (34-37)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (38-41)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (42-45)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (46-49)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
+  tb->check(COND_valid, (core->output_valid_o == 0));
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (50)
+  
+  tb->n_tick(1);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
+  tb->check(COND_data,  (core->data_o == 0b11010100101));
+  tb->check(COND_valid, (core->output_valid_o == 1));
+
+  //=================================
+  //      Tick (51-53)
+  
+  tb->n_tick(3);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  //`````````````````````````````````
+  //      Formal Checks 
+  
+  CHECK("tb_rx_frontend.valid.8E2_01",
+      tb->conditions[COND_state],
+      "Failed to implement the state machine", tb->err_cycles[COND_state]);
+
+  CHECK("tb_rx_frontend.valid.8E2_02",
+      tb->conditions[COND_data],
+      "Failed to implement the data output", tb->err_cycles[COND_data]);
+
+  CHECK("tb_rx_frontend.valid.8E2_03",
+      tb->conditions[COND_valid],
+      "Failed to implement the valid signal", tb->err_cycles[COND_valid]);
 }
 
 void tb_rx_frontend_valid_packet_8O1(TB_Rx_frontend * tb) {
   Vtb_rx_frontend * core = tb->core;
   core->testcase = T_VALID_8O1;
+
+  //=================================
+  //      Tick (0)
+  
+  tb->reset();
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->cr_clk_div_i = 4;
+  core->cr_ds_i = 1;
+  core->cr_p_i = 1;
+  core->cr_s_i = 0;
+
+  //=================================
+  //      Tick (1)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (2-3)
+  
+  tb->n_tick(2);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_IDLE));
+  tb->check(COND_valid, (core->output_valid_o == 0));
+
+  //=================================
+  //      Tick (4-5)
+  
+  tb->n_tick(2);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_START));
+  tb->check(COND_valid, (core->output_valid_o == 0));
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (6-7)
+  
+  tb->n_tick(2);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
+  tb->check(COND_valid, (core->output_valid_o == 0));
+
+  //=================================
+  //      Tick (8-9)
+  
+  tb->n_tick(2);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (10-13)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (14-17)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (18-21)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (22-25)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (26-29)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (30-33)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (34-37)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (38-41)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (42-45)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
+  tb->check(COND_valid, (core->output_valid_o == 0));
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (46)
+  
+  tb->n_tick(1);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
+  tb->check(COND_data,  (core->data_o == 0b1110100101));
+  tb->check(COND_valid, (core->output_valid_o == 1));
+
+  //=================================
+  //      Tick (47-49)
+  
+  tb->n_tick(3);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  //`````````````````````````````````
+  //      Formal Checks 
+  
+  CHECK("tb_rx_frontend.valid.8O1_01",
+      tb->conditions[COND_state],
+      "Failed to implement the state machine", tb->err_cycles[COND_state]);
+
+  CHECK("tb_rx_frontend.valid.8O1_02",
+      tb->conditions[COND_data],
+      "Failed to implement the data output", tb->err_cycles[COND_data]);
+
+  CHECK("tb_rx_frontend.valid.8O1_03",
+      tb->conditions[COND_valid],
+      "Failed to implement the valid signal", tb->err_cycles[COND_valid]);
 }
 
 void tb_rx_frontend_valid_packet_8O2(TB_Rx_frontend * tb) {
   Vtb_rx_frontend * core = tb->core;
-  core->testcase = T_VALID_8O1;
+  core->testcase = T_VALID_8O2;
+
+  //=================================
+  //      Tick (0)
+  
+  tb->reset();
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->cr_clk_div_i = 4;
+  core->cr_ds_i = 1;
+  core->cr_p_i = 1;
+  core->cr_s_i = 1;
+
+  //=================================
+  //      Tick (1)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (2-3)
+  
+  tb->n_tick(2);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_IDLE));
+  tb->check(COND_valid, (core->output_valid_o == 0));
+
+  //=================================
+  //      Tick (4-5)
+  
+  tb->n_tick(2);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_START));
+  tb->check(COND_valid, (core->output_valid_o == 0));
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (6-7)
+  
+  tb->n_tick(2);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
+  tb->check(COND_valid, (core->output_valid_o == 0));
+
+  //=================================
+  //      Tick (8-9)
+  
+  tb->n_tick(2);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (10-13)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (14-17)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (18-21)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (22-25)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (26-29)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (30-33)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (34-37)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (38-41)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (42-45)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (46-49)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
+  tb->check(COND_valid, (core->output_valid_o == 0));
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (50)
+  
+  tb->n_tick(1);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
+  tb->check(COND_data,  (core->data_o == 0b11110100101));
+  tb->check(COND_valid, (core->output_valid_o == 1));
+
+  //=================================
+  //      Tick (51-53)
+  
+  tb->n_tick(3);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  //`````````````````````````````````
+  //      Formal Checks 
+  
+  CHECK("tb_rx_frontend.valid.8O2_01",
+      tb->conditions[COND_state],
+      "Failed to implement the state machine", tb->err_cycles[COND_state]);
+
+  CHECK("tb_rx_frontend.valid.8O2_02",
+      tb->conditions[COND_data],
+      "Failed to implement the data output", tb->err_cycles[COND_data]);
+
+  CHECK("tb_rx_frontend.valid.8O2_03",
+      tb->conditions[COND_valid],
+      "Failed to implement the valid signal", tb->err_cycles[COND_valid]);
+}
+
+void tb_rx_frontend_baudrate(TB_Rx_frontend * tb) {
+  Vtb_rx_frontend * core = tb->core;
+  core->testcase = T_BAUDRATE;
+
+  //=================================
+  //      Tick (0)
+  
+  tb->reset();
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->cr_clk_div_i = 100;
+  core->cr_ds_i = 0;
+  core->cr_p_i = 0;
+  core->cr_s_i = 0;
+
+  //=================================
+  //      Tick (1)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (2-4)
+  
+  tb->n_tick(3);
+
+  //=================================
+  //      Tick (5-7)
+  
+  tb->n_tick(3); // 3 cycle delay due to metastability countermeasures
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_START));
+  tb->check(COND_valid, (core->output_valid_o == 0));
+
+  //=================================
+  //      Tick (8-53)
+  
+  tb->n_tick(46);
+
+  //=================================
+  //      Tick (54-56)
+  
+  tb->n_tick(3); // 3 cycle delay due to metastability countermeasures
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
+  tb->check(COND_valid, (core->output_valid_o == 0));
+
+  //=================================
+  //      Tick (57-103)
+  
+  tb->n_tick(47);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (104-153)
+  
+  tb->n_tick(50);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
+  tb->check(COND_valid, (core->output_valid_o == 0));
+
+  //=================================
+  //      Tick (154-203)
+  
+  tb->n_tick(50);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (204-303)
+  
+  tb->n_tick(100);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (304-403)
+  
+  tb->n_tick(100);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (404-503)
+  
+  tb->n_tick(100);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (504-603)
+  
+  tb->n_tick(100);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (604-703)
+  
+  tb->n_tick(100);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (704-803)
+  
+  tb->n_tick(100);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (804-853)
+  
+  tb->n_tick(50);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
+  tb->check(COND_valid, (core->output_valid_o == 0));
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (854)
+  
+  tb->n_tick(1);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
+  tb->check(COND_data,  (core->data_o == 0b10100101));
+  tb->check(COND_valid, (core->output_valid_o == 1));
+
+  //=================================
+  //      Tick (855-903)
+  
+  tb->n_tick(49);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  //`````````````````````````````````
+  //      Formal Checks 
+  
+  CHECK("tb_rx_frontend.valid.7N1_01",
+      tb->conditions[COND_state],
+      "Failed to implement the state machine", tb->err_cycles[COND_state]);
+
+  CHECK("tb_rx_frontend.valid.7N1_02",
+      tb->conditions[COND_data],
+      "Failed to implement the data output", tb->err_cycles[COND_data]);
+
+  CHECK("tb_rx_frontend.valid.7N1_03",
+      tb->conditions[COND_valid],
+      "Failed to implement the valid signal", tb->err_cycles[COND_valid]);
+}
+
+void tb_rx_frontend_parity(TB_Rx_frontend * tb) {
+
 }
 
 int main(int argc, char ** argv, char ** env) {
@@ -427,6 +2827,7 @@ int main(int argc, char ** argv, char ** env) {
   /************************************************************/
 
   tb_rx_frontend_idle(tb);
+
   tb_rx_frontend_valid_packet_7N1(tb);
   tb_rx_frontend_valid_packet_7N2(tb);
   tb_rx_frontend_valid_packet_7E1(tb);
@@ -439,6 +2840,10 @@ int main(int argc, char ** argv, char ** env) {
   tb_rx_frontend_valid_packet_8E2(tb);
   tb_rx_frontend_valid_packet_8O1(tb);
   tb_rx_frontend_valid_packet_8O2(tb);
+
+  tb_rx_frontend_baudrate(tb);
+
+  tb_rx_frontend_parity(tb);
 
   /************************************************************/
 
