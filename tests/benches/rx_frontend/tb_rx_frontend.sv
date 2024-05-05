@@ -27,7 +27,10 @@ module tb_rx_frontend
   input   logic         clk_i,
   input   logic         rst_i,
 
-  input   logic[15:0]   clk_div_i,
+  input   logic[15:0]   cr_clk_div_i,
+  input   logic         cr_ds_i,
+  input   logic[1:0]    cr_p_i,
+  input   logic         cr_s_i,
   input   logic         uart_rx_i,
 
   output  logic[10:0]   data_o,
@@ -38,7 +41,10 @@ rx_frontend dut (
   .clk_i           (clk_i),
   .rst_i           (rst_i),
                  
-  .clk_div_i       (clk_div_i),
+  .cr_clk_div_i    (cr_clk_div_i),
+  .cr_ds_i         (cr_ds_i),
+  .cr_p_i          (cr_p_i),
+  .cr_s_i          (cr_s_i),
   .uart_rx_i       (uart_rx_i),
                  
   .data_o          (data_o),

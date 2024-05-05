@@ -1,15 +1,15 @@
 [*]
 [*] GTKWave Analyzer v3.4.0 (w)1999-2022 BSI
-[*] Sun May  5 08:36:23 2024
+[*] Sun May  5 10:05:23 2024
 [*]
 [dumpfile] "/Users/cchaine/Desktop/Documents/projects/.ecap5.nosync/design/wbuart/build/tests/waves/rx_frontend.vcd"
-[dumpfile_mtime] "Sun May  5 08:36:14 2024"
-[dumpfile_size] 5880
+[dumpfile_mtime] "Sun May  5 10:04:13 2024"
+[dumpfile_size] 5833
 [savefile] "/Users/cchaine/Desktop/Documents/projects/.ecap5.nosync/design/wbuart/config/gtkwave/config/rx_frontend.gtkw"
-[timestart] 70
-[size] 1936 705
+[timestart] 199
+[size] 1440 783
 [pos] -1 -1
-*-6.303332 590 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+*-6.303332 533 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 [markername] AA
 [markername] BB
 [markername] CC
@@ -39,7 +39,7 @@
 [treeopen] TOP.
 [treeopen] TOP.tb_rx_frontend.
 [sst_width] 253
-[signals_width] 202
+[signals_width] 292
 [sst_expanded] 1
 [sst_vpaned_height] 196
 @2024
@@ -50,8 +50,11 @@ TOP.tb_rx_frontend.testcase[31:0]
 TOP.tb_rx_frontend.clk_i
 TOP.tb_rx_frontend.rst_i
 @22
-TOP.tb_rx_frontend.clk_div_i[15:0]
+TOP.tb_rx_frontend.cr_clk_div_i[15:0]
 @28
+TOP.tb_rx_frontend.cr_ds_i
+TOP.tb_rx_frontend.cr_p_i[1:0]
+TOP.tb_rx_frontend.cr_s_i
 TOP.tb_rx_frontend.uart_rx_i
 [color] 3
 TOP.tb_rx_frontend.dut.uart_rx_qqq
@@ -64,9 +67,11 @@ TOP.tb_rx_frontend.dut.state_q[31:0]
 TOP.tb_rx_frontend.dut.half_baud_cnt_q[15:0]
 [color] 6
 TOP.tb_rx_frontend.dut.baud_cnt_q[15:0]
-[color] 6
-TOP.tb_rx_frontend.dut.data_cnt_q[3:0]
 @28
+[color] 6
+TOP.tb_rx_frontend.dut.data_cnt_q[10:0]
+TOP.tb_rx_frontend.dut.data_cnt_done
+[color] 6
 TOP.tb_rx_frontend.output_valid_o
 TOP.tb_rx_frontend.data_o[10:0]
 [pattern_trace] 1

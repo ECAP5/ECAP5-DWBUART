@@ -39,8 +39,19 @@ enum CondId {
 };
 
 enum TestcaseId {
-  T_IDLE,
-  T_VALID_PACKET
+  T_IDLE      = 1,
+  T_VALID_7N1 = 2,
+  T_VALID_7N2 = 3,
+  T_VALID_7E1 = 4,
+  T_VALID_7E2 = 5,
+  T_VALID_7O1 = 6,
+  T_VALID_7O2 = 7,
+  T_VALID_8N1 = 8,
+  T_VALID_8N2 = 9,
+  T_VALID_8E1 = 10,
+  T_VALID_8E2 = 11,
+  T_VALID_8O1 = 12,
+  T_VALID_8O2 = 13
 };
 
 enum StateId {
@@ -66,7 +77,16 @@ public:
   
   void _nop() {
     core->uart_rx_i = 1;
-    core->clk_div_i = 0;
+    core->cr_clk_div_i = 0;
+    core->cr_ds_i = 0;
+    core->cr_p_i = 0;
+    core->cr_s_i = 0;
+  }
+
+  void n_tick(int n) {
+    for(int i = 0; i < n; i++) {
+      this->tick();
+    }
   }
 };
 
@@ -136,61 +156,12 @@ void tb_rx_frontend_idle(TB_Rx_frontend * tb) {
       "Failed to implement the valid signal", tb->err_cycles[COND_valid]);
 }
 
-void tb_rx_frontend_valid_packet(TB_Rx_frontend * tb) {
+void tb_rx_frontend_valid_packet_7N1(TB_Rx_frontend * tb) {
   Vtb_rx_frontend * core = tb->core;
-  core->testcase = T_VALID_PACKET;
+  core->testcase = T_VALID_7N1;
 
   // The following actions are performed in this test :
-  //    tick 0. Set clk_div to 4 (core is in IDLE)
-  //    tick 1. Send start bit (core is in START)
-  //    tick 2. Hold start bit (core is in DATA)
-  //    tick 3. Hold start bit (core is in DATA)
-  //    tick 4. Hold start bit (core is in DATA)
-  //    tick 5. Send d0 bit (core is in DATA)
-  //    tick 6. Hold d0 bit (core is in DATA)
-  //    tick 7. Hold d0 bit (core is in DATA)
-  //    tick 8. Hold d0 bit (core is in DATA)
-  //    tick 9. Send d1 bit (core is in DATA)
-  //    tick 10. Hold d1 bit (core is in DATA)
-  //    tick 11. Hold d1 bit (core is in DATA)
-  //    tick 12. Hold d1 bit (core is in DATA)
-  //    tick 13. Send d2 bit (core is in DATA)
-  //    tick 14. Hold d2 bit (core is in DATA)
-  //    tick 15. Hold d2 bit (core is in DATA)
-  //    tick 16. Hold d2 bit (core is in DATA)
-  //    tick 17. Send d3 bit (core is in DATA)
-  //    tick 18. Hold d3 bit (core is in DATA)
-  //    tick 19. Hold d3 bit (core is in DATA)
-  //    tick 20. Hold d3 bit (core is in DATA)
-  //    tick 21. Send d4 bit (core is in DATA)
-  //    tick 22. Hold d4 bit (core is in DATA)
-  //    tick 23. Hold d4 bit (core is in DATA)
-  //    tick 24. Hold d4 bit (core is in DATA)
-  //    tick 25. Send d5 bit (core is in DATA)
-  //    tick 26. Hold d5 bit (core is in DATA)
-  //    tick 27. Hold d5 bit (core is in DATA)
-  //    tick 28. Hold d5 bit (core is in DATA)
-  //    tick 29. Send d6 bit (core is in DATA)
-  //    tick 30. Hold d6 bit (core is in DATA)
-  //    tick 31. Hold d6 bit (core is in DATA)
-  //    tick 32. Hold d6 bit (core is in DATA)
-  //    tick 33. Send d7 bit (core is in DATA)
-  //    tick 34. Hold d7 bit (core is in DATA)
-  //    tick 35. Hold d7 bit (core is in DATA)
-  //    tick 36. Hold d7 bit (core is in DATA)
-  //    tick 37. Send parity bit (core is in DATA)
-  //    tick 38. Hold parity bit (core is in DATA)
-  //    tick 39. Hold parity bit (core is in DATA)
-  //    tick 40. Hold parity bit (core is in DATA)
-  //    tick 41. Send stop bit (core is in DATA)
-  //    tick 42. Hold stop bit (core is in IDLE)
-  //    tick 43. Hold stop bit (core is in IDLE)
-  //    tick 44. Hold stop bit (core is in IDLE)
-  //    tick 45. Send stop bit (core is in IDLE)
-  //    tick 46. Hold stop bit (core is in IDLE)
-  //    tick 47. Hold stop bit (core is in IDLE)
-  //    tick 48. Hold stop bit (core is in IDLE)
-  //    tick 49. Nothing (core is in IDLE)
+  //    tick 0. Nothing (core is in IDLE)
 
   //=================================
   //      Tick (0)
@@ -200,7 +171,10 @@ void tb_rx_frontend_valid_packet(TB_Rx_frontend * tb) {
   //`````````````````````````````````
   //      Set inputs
   
-  core->clk_div_i = 4;
+  core->cr_clk_div_i = 4;
+  core->cr_ds_i = 0;
+  core->cr_p_i = 0;
+  core->cr_s_i = 0;
 
   //=================================
   //      Tick (1)
@@ -212,476 +186,230 @@ void tb_rx_frontend_valid_packet(TB_Rx_frontend * tb) {
   
   core->uart_rx_i = 0;
 
-  //`````````````````````````````````
-  //      Checks 
-  
   //=================================
-  //      Tick (2)
+  //      Tick (2-3)
   
-  tb->tick();
+  tb->n_tick(2);
 
   //`````````````````````````````````
   //      Checks 
   
   //=================================
-  //      Tick (3)
+  //      Tick (4-5)
   
-  tb->tick();
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  //=================================
-  //      Tick (4)
-  
-  tb->tick();
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  //=================================
-  //      Tick (5)
-  
-  tb->tick();
+  tb->n_tick(2);
 
   //`````````````````````````````````
   //      Set inputs
   
   core->uart_rx_i = 1;
 
-  //`````````````````````````````````
-  //      Checks 
-  
   //=================================
-  //      Tick (6)
+  //      Tick (6-7)
   
-  tb->tick();
+  tb->n_tick(2);
 
   //`````````````````````````````````
   //      Checks 
   
   //=================================
-  //      Tick (7)
+  //      Tick (8-9)
   
-  tb->tick();
-
-  //=================================
-  //      Tick (8)
-  
-  tb->tick();
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  //=================================
-  //      Tick (9)
-  
-  tb->tick();
-
-  //`````````````````````````````````
-  //      Checks 
-  
+  tb->n_tick(2);
 
   //`````````````````````````````````
   //      Set inputs
   
   core->uart_rx_i = 0;
 
-  //`````````````````````````````````
-  //      Checks 
-  
   //=================================
-  //      Tick (10)
+  //      Tick (10-11)
   
-  tb->tick();
+  tb->n_tick(2);
 
   //`````````````````````````````````
   //      Checks 
   
   //=================================
-  //      Tick (11)
+  //      Tick (12-13)
   
-  tb->tick();
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  //=================================
-  //      Tick (12)
-  
-  tb->tick();
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  //=================================
-  //      Tick (13)
-  
-  tb->tick();
+  tb->n_tick(2);
 
   //`````````````````````````````````
   //      Set inputs
   
   core->uart_rx_i = 1;
 
-  //`````````````````````````````````
-  //      Checks 
-  
   //=================================
-  //      Tick (14)
+  //      Tick (14-15)
   
-  tb->tick();
+  tb->n_tick(2);
 
   //`````````````````````````````````
   //      Checks 
   
   //=================================
-  //      Tick (15)
+  //      Tick (16-17)
   
-  tb->tick();
+  tb->n_tick(2);
 
-  //=================================
-  //      Tick (16)
-  
-  tb->tick();
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  //=================================
-  //      Tick (17)
-  
-  tb->tick();
-
-  //`````````````````````````````````
-  //      Checks 
-  
   //`````````````````````````````````
   //      Set inputs
   
   core->uart_rx_i = 0;
 
-  //`````````````````````````````````
-  //      Checks 
-  
   //=================================
-  //      Tick (18)
+  //      Tick (18-19)
   
-  tb->tick();
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  //=================================
-  //      Tick (19)
-  
-  tb->tick();
-
-  //=================================
-  //      Tick (20)
-  
-  tb->tick();
+  tb->n_tick(2);
 
   //`````````````````````````````````
   //      Checks 
   
   //=================================
-  //      Tick (21)
+  //      Tick (20-21)
   
-  tb->tick();
+  tb->n_tick(2);
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  //=================================
-  //      Tick (22)
-  
-  tb->tick();
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  //=================================
-  //      Tick (23)
-  
-  tb->tick();
-
-  //=================================
-  //      Tick (24)
-  
-  tb->tick();
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  //=================================
-  //      Tick (25)
-  
-  tb->tick();
-
-  //`````````````````````````````````
-  //      Checks 
-  
   //`````````````````````````````````
   //      Set inputs
   
   core->uart_rx_i = 0;
 
-  //`````````````````````````````````
-  //      Checks 
-  
   //=================================
-  //      Tick (26)
+  //      Tick (22-23)
   
-  tb->tick();
+  tb->n_tick(2);
 
   //`````````````````````````````````
   //      Checks 
   
   //=================================
-  //      Tick (27)
+  //      Tick (24-25)
   
-  tb->tick();
+  tb->n_tick(2);
 
-  //=================================
-  //      Tick (28)
-  
-  tb->tick();
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  //=================================
-  //      Tick (29)
-  
-  tb->tick();
-
-  //`````````````````````````````````
-  //      Checks 
-  
   //`````````````````````````````````
   //      Set inputs
   
   core->uart_rx_i = 1;
 
-  //`````````````````````````````````
-  //      Checks 
-  
   //=================================
-  //      Tick (30)
+  //      Tick (26-27)
   
-  tb->tick();
+  tb->n_tick(2);
 
   //`````````````````````````````````
   //      Checks 
   
   //=================================
-  //      Tick (31)
+  //      Tick (28-29)
   
-  tb->tick();
+  tb->n_tick(2);
 
-  //=================================
-  //      Tick (32)
-  
-  tb->tick();
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  //=================================
-  //      Tick (33)
-  
-  tb->tick();
-
-  //`````````````````````````````````
-  //      Checks 
-  
   //`````````````````````````````````
   //      Set inputs
   
   core->uart_rx_i = 0;
 
-  //`````````````````````````````````
-  //      Checks 
-  
   //=================================
-  //      Tick (34)
+  //      Tick (30-31)
   
-  tb->tick();
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  //=================================
-  //      Tick (35)
-  
-  tb->tick();
-
-  //=================================
-  //      Tick (36)
-  
-  tb->tick();
+  tb->n_tick(2);
 
   //`````````````````````````````````
   //      Checks 
   
   //=================================
-  //      Tick (37)
+  //      Tick (32-33)
   
-  tb->tick();
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  //=================================
-  //      Tick (38)
-  
-  tb->tick();
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  //=================================
-  //      Tick (39)
-  
-  tb->tick();
-
-  //=================================
-  //      Tick (40)
-  
-  tb->tick();
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  //=================================
-  //      Tick (41)
-  
-  tb->tick();
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  //=================================
-  //      Tick (42)
-  
-  tb->tick();
-
-  //=================================
-  //      Tick (43)
-  
-  tb->tick();
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  //=================================
-  //      Tick (44)
-  
-  tb->tick();
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  //`````````````````````````````````
-  //      Checks 
-  
-  //=================================
-  //      Tick (45)
-  
-  tb->tick();
+  tb->n_tick(2);
 
   //`````````````````````````````````
   //      Set inputs
   
   core->uart_rx_i = 1;
 
-  //`````````````````````````````````
-  //      Checks 
-  
   //=================================
-  //      Tick (46)
+  //      Tick (34-35)
   
-  tb->tick();
+  tb->n_tick(2);
 
   //`````````````````````````````````
   //      Checks 
   
   //=================================
-  //      Tick (47)
+  //      Tick (36-37)
   
-  tb->tick();
+  tb->n_tick(2);
 
   //`````````````````````````````````
-  //      Checks 
+  //      Set inputs
   
+  core->uart_rx_i = 0;
+
   //=================================
-  //      Tick (48)
+  //      Tick (38-39)
   
-  tb->tick();
+  tb->n_tick(8);
 
   //`````````````````````````````````
   //      Checks 
-  
-  //=================================
-  //      Tick (49)
-  
-  tb->tick();
+}
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  //=================================
-  //      Tick (50)
-  
-  tb->tick();
+void tb_rx_frontend_valid_packet_7N2(TB_Rx_frontend * tb) {
+  Vtb_rx_frontend * core = tb->core;
+  core->testcase = T_VALID_7N2;
+}
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  //=================================
-  //      Tick (51)
-  
-  tb->tick();
+void tb_rx_frontend_valid_packet_7E1(TB_Rx_frontend * tb) {
+  Vtb_rx_frontend * core = tb->core;
+  core->testcase = T_VALID_7E1;
+}
 
-  //`````````````````````````````````
-  //      Checks 
-  
+void tb_rx_frontend_valid_packet_7E2(TB_Rx_frontend * tb) {
+  Vtb_rx_frontend * core = tb->core;
+  core->testcase = T_VALID_7E2;
+}
 
-  //`````````````````````````````````
-  //      Formal Checks 
-  
-//  CHECK("tb_rx_frontend.idle.01",
-//      tb->conditions[COND_state],
-//      "Failed to implement the state machine", tb->err_cycles[COND_state]);
-//
-//  CHECK("tb_rx_frontend.idle.02",
-//      tb->conditions[COND_valid],
-//      "Failed to implement the valid signal", tb->err_cycles[COND_valid]);
+void tb_rx_frontend_valid_packet_7O1(TB_Rx_frontend * tb) {
+  Vtb_rx_frontend * core = tb->core;
+  core->testcase = T_VALID_7O1;
+}
+
+void tb_rx_frontend_valid_packet_7O2(TB_Rx_frontend * tb) {
+  Vtb_rx_frontend * core = tb->core;
+  core->testcase = T_VALID_7O2;
+}
+
+void tb_rx_frontend_valid_packet_8N1(TB_Rx_frontend * tb) {
+  Vtb_rx_frontend * core = tb->core;
+  core->testcase = T_VALID_8N1;
+}
+
+void tb_rx_frontend_valid_packet_8N2(TB_Rx_frontend * tb) {
+  Vtb_rx_frontend * core = tb->core;
+  core->testcase = T_VALID_8N2;
+}
+
+void tb_rx_frontend_valid_packet_8E1(TB_Rx_frontend * tb) {
+  Vtb_rx_frontend * core = tb->core;
+  core->testcase = T_VALID_8E1;
+}
+
+void tb_rx_frontend_valid_packet_8E2(TB_Rx_frontend * tb) {
+  Vtb_rx_frontend * core = tb->core;
+  core->testcase = T_VALID_8E2;
+}
+
+void tb_rx_frontend_valid_packet_8O1(TB_Rx_frontend * tb) {
+  Vtb_rx_frontend * core = tb->core;
+  core->testcase = T_VALID_8O1;
+}
+
+void tb_rx_frontend_valid_packet_8O2(TB_Rx_frontend * tb) {
+  Vtb_rx_frontend * core = tb->core;
+  core->testcase = T_VALID_8O1;
 }
 
 int main(int argc, char ** argv, char ** env) {
@@ -699,7 +427,18 @@ int main(int argc, char ** argv, char ** env) {
   /************************************************************/
 
   tb_rx_frontend_idle(tb);
-  tb_rx_frontend_valid_packet(tb);
+  tb_rx_frontend_valid_packet_7N1(tb);
+  tb_rx_frontend_valid_packet_7N2(tb);
+  tb_rx_frontend_valid_packet_7E1(tb);
+  tb_rx_frontend_valid_packet_7E2(tb);
+  tb_rx_frontend_valid_packet_7O1(tb);
+  tb_rx_frontend_valid_packet_7O2(tb);
+  tb_rx_frontend_valid_packet_8N1(tb);
+  tb_rx_frontend_valid_packet_8N2(tb);
+  tb_rx_frontend_valid_packet_8E1(tb);
+  tb_rx_frontend_valid_packet_8E2(tb);
+  tb_rx_frontend_valid_packet_8O1(tb);
+  tb_rx_frontend_valid_packet_8O2(tb);
 
   /************************************************************/
 

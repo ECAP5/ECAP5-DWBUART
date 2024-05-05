@@ -25,13 +25,25 @@ module rx_frontend
   input   logic         clk_i,
   input   logic         rst_i,
 
-  input   logic[15:0]   clk_div_i,
+  input   logic[15:0]   cr_clk_div_i,
+  input   logic         cr_ds_i,
+  input   logic[1:0]    cr_p_i,
+  input   logic         cr_s_i,
   input   logic         uart_rx_i,
 
   output  logic[10:0]   data_o,
   output  logic         output_valid_o
 );
-localparam logic[3:0] MAX_PACKET_SIZE = 11;
+// The minimum packet size is :
+//   - 7 data bits
+//   - 1 stop bit
+localparam MIN_PACKET_SIZE = 8;
+
+// The maximum packet size is :
+//   - 8 data bits
+//   - 1 parity bit
+//   - 2 stop bit
+localparam MAX_PACKET_SIZE = 11;
 
 typedef enum {
   IDLE,    // 0
@@ -44,16 +56,16 @@ logic uart_rx_q, uart_rx_qq, uart_rx_qqq;
 
 logic[15:0] half_baud_cnt_d, half_baud_cnt_q, 
                  baud_cnt_d,      baud_cnt_q;
-logic[$size(MAX_PACKET_SIZE)-1:0]  data_cnt_d, data_cnt_q;
 
-// The shift register data of size 11 :
-//   - max 8 data bits
-//   - max 1 parity bit
-//   - max 2 stop bits
+logic[MAX_PACKET_SIZE-1:0]  data_cnt_d, data_cnt_q;
+
 logic[MAX_PACKET_SIZE-1:0] data_q;
 
 logic output_valid_d, output_valid_q;
 
+logic[$clog2(MAX_PACKET_SIZE)-1:0] packet_size;
+logic data_cnt_done;
+   
 always_comb begin : state_machine
   state_d = state_q;
 
@@ -72,12 +84,17 @@ always_comb begin : state_machine
     end
     DATA: begin
       // Wait for the packet to be received
-      if(data_cnt_q == '0) begin
+      if(data_cnt_done) begin
         state_d = IDLE;
       end
     end
     default: begin end
   endcase
+end
+
+always_comb begin
+  packet_size = MIN_PACKET_SIZE + {3'b0, cr_ds_i} + {2'b0, cr_p_i} + {3'b0, cr_s_i};
+  data_cnt_done = data_cnt_q[packet_size - 1];
 end
 
 always_comb begin : counters
@@ -90,7 +107,7 @@ always_comb begin : counters
       // We initialize the half_baud_rate counter at the start of the 
       // start bit
       if(uart_rx_qqq == 0) begin
-        half_baud_cnt_d = {1'b0, clk_div_i[15:1]} - 2;
+        half_baud_cnt_d = {1'b0, cr_clk_div_i[15:1]} - 2;
       end
     end
     START: begin
@@ -98,17 +115,17 @@ always_comb begin : counters
       // We initialize the data counter when reaching the middle of the 
       // start bit
       if(half_baud_cnt_q == '0) begin
-        baud_cnt_d = clk_div_i - 1;
-        data_cnt_d = MAX_PACKET_SIZE - 1;
+        baud_cnt_d = cr_clk_div_i - 1;
+        data_cnt_d[0] = 1'b1;
       end
     end
     DATA: begin
       if(baud_cnt_q == '0) begin
         // When the baud interval has elapsed
         // reset the baud counter
-        baud_cnt_d = clk_div_i - 1;
+        baud_cnt_d = cr_clk_div_i - 1;
         // decrement the data counter
-        data_cnt_d = data_cnt_q - 1;
+        data_cnt_d = {data_cnt_d[MAX_PACKET_SIZE-2:0], 1'b0};
       end else begin
         baud_cnt_d = baud_cnt_q - 1;
       end
@@ -119,7 +136,7 @@ end
 
 always_comb begin : output_valid
   output_valid_d = 0;
-  if(state_q == DATA && data_cnt_q == '0) begin
+  if(state_q == DATA && data_cnt_done) begin
     output_valid_d = 1;
   end
 end
