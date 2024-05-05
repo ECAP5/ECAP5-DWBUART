@@ -114,6 +114,7 @@ always_comb begin
         baud_cnt_d = cr_clk_div_i - 1;
         dr_d = dr_i;
         bit_cnt_d = cr_ds_i ? (1 << 8) : (1 << 7);
+        parity_d = cr_p_i[0] ^ dr_i[0];
       end
     end
     START: begin
@@ -124,6 +125,7 @@ always_comb begin
       if(baud_cnt_q == '0) begin
         bit_cnt_d = {1'b0, bit_cnt_q[MAX_DATA_SIZE:1]};
         dr_d = {1'b0, dr_q[$size(dr_i)-1:1]};
+        parity_d = parity_q ^ dr_q[0];
         if(bit_cnt_q[1]) begin
           bit_cnt_d = cr_s_i ? (1 << 2) : (1 << 1);
         end

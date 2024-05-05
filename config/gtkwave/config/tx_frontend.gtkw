@@ -1,15 +1,15 @@
 [*]
 [*] GTKWave Analyzer v3.4.0 (w)1999-2022 BSI
-[*] Sun May  5 15:35:12 2024
+[*] Sun May  5 16:00:52 2024
 [*]
 [dumpfile] "/Users/cchaine/Desktop/Documents/projects/.ecap5.nosync/design/wbuart/build/tests/waves/tx_frontend.vcd"
-[dumpfile_mtime] "Sun May  5 15:33:58 2024"
-[dumpfile_size] 5623
+[dumpfile_mtime] "Sun May  5 16:00:41 2024"
+[dumpfile_size] 16748
 [savefile] "/Users/cchaine/Desktop/Documents/projects/.ecap5.nosync/design/wbuart/config/gtkwave/config/tx_frontend.gtkw"
-[timestart] 1
+[timestart] 1229
 [size] 1440 783
 [pos] -1 -1
-*-7.093879 140 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+*-7.093879 459 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 [markername] AA
 [markername] BB
 [markername] CC
@@ -39,7 +39,7 @@
 [treeopen] TOP.
 [treeopen] TOP.tb_tx_frontend.
 [sst_width] 253
-[signals_width] 177
+[signals_width] 212
 [sst_expanded] 1
 [sst_vpaned_height] 313
 @2024
