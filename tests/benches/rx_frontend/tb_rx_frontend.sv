@@ -31,9 +31,11 @@ module tb_rx_frontend
   input   logic         cr_ds_i,
   input   logic[1:0]    cr_p_i,
   input   logic         cr_s_i,
+
   input   logic         uart_rx_i,
 
-  output  logic[10:0]   packet_o,
+  output  logic[10:0]   frame_o,
+  output  logic         parity_o,
   output  logic         output_valid_o
 );
 
@@ -45,9 +47,11 @@ rx_frontend dut (
   .cr_ds_i         (cr_ds_i),
   .cr_p_i          (cr_p_i),
   .cr_s_i          (cr_s_i),
+
   .uart_rx_i       (uart_rx_i),
                  
-  .packet_o        (packet_o),
+  .frame_o         (frame_o),
+  .parity_o        (parity_o),
   .output_valid_o  (output_valid_o)
 );
 

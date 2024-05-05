@@ -32,15 +32,16 @@ module rx_frontend
 
   input   logic         uart_rx_i,
 
-  output  logic[10:0]   packet_o,
+  output  logic[10:0]   frame_o,
+  output  logic         parity_o,
   output  logic         output_valid_o
 );
-// The minimum packet size is :
+// The minimum frame size is :
 //   - 7 data bits
 //   - 1 stop bit
 localparam MIN_PACKET_SIZE = 8;
 
-// The maximum packet size is :
+// The maximum frame size is :
 //   - 8 data bits
 //   - 1 parity bit
 //   - 2 stop bit
@@ -62,25 +63,18 @@ logic uart_rx_q, uart_rx_qq, uart_rx_qqq;
 logic[15:0] half_baud_cnt_d, half_baud_cnt_q, 
                  baud_cnt_d,      baud_cnt_q;
 
-logic[MAX_PACKET_SIZE:0]  packet_cnt_d, packet_cnt_q;
+logic[MAX_PACKET_SIZE:0]  frame_bit_cnt_d, frame_bit_cnt_q;
 
-logic[MAX_PACKET_SIZE-1:0] packet_q, packet_shifted0, packet_shifted;
+logic[MAX_PACKET_SIZE-1:0] frame_d, frame_q, frame_shifted0, frame_shifted;
 
-logic[$clog2(MAX_PACKET_SIZE)-1:0] packet_size;
-logic[$clog2(MAX_PACKET_SIZE)-1:0] packet_start_index;
-logic packet_cnt_done;
+logic[$clog2(MAX_PACKET_SIZE)-1:0] frame_size;
+logic[$clog2(MAX_PACKET_SIZE)-1:0] frame_start_index;
+logic frame_bit_cnt_done;
+
+logic parity_d, parity_q;
 
 /*****************************************/
 
-always_comb begin
-  // The packet size is computed based on the given configuration
-  packet_size = MIN_PACKET_SIZE + {3'b0, cr_ds_i} + {2'b0, (cr_p_i == '0 ? 1'b0 : 1'b1)} + {3'b0, cr_s_i};
-  // Index of bit0 in the packet_q shift register
-  packet_start_index = MAX_PACKET_SIZE - packet_size;
-  // A packet is terminated when this bit is set
-  packet_cnt_done = packet_cnt_q[packet_size];
-end
-   
 always_comb begin : state_machine
   state_d = state_q;
 
@@ -98,8 +92,8 @@ always_comb begin : state_machine
       end
     end
     DATA: begin
-      // Wait for the packet to be received
-      if(packet_cnt_done) begin
+      // Wait for the frame to be received
+      if(frame_bit_cnt_done) begin
         state_d = IDLE;
       end
     end
@@ -107,10 +101,19 @@ always_comb begin : state_machine
   endcase
 end
 
-always_comb begin : counters
+always_comb begin : sampling
   half_baud_cnt_d = 0;
   baud_cnt_d = 0;
-  packet_cnt_d = packet_cnt_q;
+  frame_bit_cnt_d = frame_bit_cnt_q;
+  frame_d = frame_q;
+  parity_d = parity_q;
+
+  // The frame size is computed based on the given configuration
+  frame_size = MIN_PACKET_SIZE + {3'b0, cr_ds_i} + {2'b0, (cr_p_i == '0 ? 1'b0 : 1'b1)} + {3'b0, cr_s_i};
+  // Index of bit0 in the frame_q shift register
+  frame_start_index = MAX_PACKET_SIZE - frame_size;
+  // A frame is terminated when this bit is set
+  frame_bit_cnt_done = frame_bit_cnt_q[frame_size];
 
   case(state_q)
     IDLE: begin
@@ -129,31 +132,40 @@ always_comb begin : counters
         // It takes one cycle for logic to detect this counter is null
         // The counter is therefore initialized to the baud interval - 1
         baud_cnt_d = cr_clk_div_i - 1;
-        // Initialize the packet size ring counter
-        packet_cnt_d[0] = 1'b1;
+        // Initialize the frame size ring counter
+        frame_bit_cnt_d[0] = 1'b1;
+        // Initialize the parity bit with the parity configuration bit
+        // the parity is still computed when disabled but shall be ignored by the user
+        parity_d = cr_p_i[0];
       end
     end
     DATA: begin
       if(baud_cnt_q == '0) begin
-        // When the baud interval has elapsed, reset the baud counter and decrement the data counter
+        // When the baud interval has elapsed
+        //   1. reset the baud counter
+        //   2. decrement the frame bit counter
+        //   3. sample the input
+        //   4. update the computed parity
         baud_cnt_d = cr_clk_div_i - 1;
-        packet_cnt_d = {packet_cnt_d[MAX_PACKET_SIZE-1:0], 1'b0};
+        frame_bit_cnt_d = {frame_bit_cnt_d[MAX_PACKET_SIZE-1:0], 1'b0};
+        frame_d = {uart_rx_qqq, frame_q[10:1]};
+        parity_d = parity_q ^ uart_rx_qqq;
       end else begin
         baud_cnt_d = baud_cnt_q - 1;
       end
       // Reset the counter as it will not be incremented further
-      if(packet_cnt_done) begin
-        packet_cnt_d = '0;
+      if(frame_bit_cnt_done) begin
+        frame_bit_cnt_d = '0;
       end
     end
     default: begin end
   endcase
 end
 
-always_comb begin : packet_align
-  // Barrel shifter to align the packet_q shift register output
-  packet_shifted0 = packet_start_index[0] ? {1'b0, packet_q[MAX_PACKET_SIZE-1:1]} : packet_q;
-  packet_shifted  = packet_start_index[1] ? {2'b0, packet_shifted0[MAX_PACKET_SIZE-1:2]} : packet_shifted0;
+always_comb begin : frame_align
+  // Barrel shifter to align the frame_q shift register output
+  frame_shifted0 = frame_start_index[0] ? {1'b0, frame_q[MAX_PACKET_SIZE-1:1]} : frame_q;
+  frame_shifted  = frame_start_index[1] ? {2'b0, frame_shifted0[MAX_PACKET_SIZE-1:2]} : frame_shifted0;
 end
 
 always_ff @(posedge clk_i) begin
@@ -166,8 +178,9 @@ always_ff @(posedge clk_i) begin
 
     half_baud_cnt_q <= '0;
     baud_cnt_q      <= '0;
-    packet_q        <= '0;
-    packet_cnt_q    <= '0;
+    frame_q         <= '0;
+    frame_bit_cnt_q <= '0;
+    parity_q        <=  0;
   end else begin
     state_q <= state_d;
 
@@ -177,21 +190,21 @@ always_ff @(posedge clk_i) begin
     uart_rx_qq  <= uart_rx_q;
     uart_rx_qqq <= uart_rx_qq;
 
-    // half baudrate counter used at the start of a packet to
+    // half baudrate counter used at the start of a frame to
     // sample the serial signal in the middle of a bit
     half_baud_cnt_q <= half_baud_cnt_d;
 
     // baudrate counter used to sample the serial signal
     baud_cnt_q <= baud_cnt_d;
 
-    // Sample the serial signal while in the data state and
-    // the baud interval has elapsed
-    if(state_q == DATA && baud_cnt_q == '0) begin
-      packet_q <= {uart_rx_qqq, packet_q[10:1]};
-    end
+    // The frame shift register
+    frame_q <= frame_d;
     
-    // The data counter used to detect the end of packet
-    packet_cnt_q <= packet_cnt_d;
+    // The data counter used to detect the end of frame
+    frame_bit_cnt_q <= frame_bit_cnt_d;
+
+    // Computed parity
+    parity_q <= parity_d;
   end
 end
 
@@ -199,7 +212,8 @@ end
 /*         Assign output signals         */
 /*****************************************/
 
-assign packet_o = packet_shifted;
-assign output_valid_o = packet_cnt_done;
+assign frame_o = frame_shifted;
+assign parity_o = parity_q;
+assign output_valid_o = frame_bit_cnt_done;
 
 endmodule // rx_frontend
