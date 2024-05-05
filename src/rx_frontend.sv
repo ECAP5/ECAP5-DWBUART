@@ -45,6 +45,10 @@ localparam MIN_PACKET_SIZE = 8;
 //   - 2 stop bit
 localparam MAX_PACKET_SIZE = 11;
 
+/*****************************************/
+/*           Internal signals            */
+/*****************************************/
+
 typedef enum {
   IDLE,    // 0
   START,   // 1
@@ -59,12 +63,22 @@ logic[15:0] half_baud_cnt_d, half_baud_cnt_q,
 
 logic[MAX_PACKET_SIZE:0]  data_cnt_d, data_cnt_q;
 
-logic[MAX_PACKET_SIZE-1:0] data_q;
-
-logic output_valid_d, output_valid_q;
+logic[MAX_PACKET_SIZE-1:0] data_q, data_shifted0, data_shifted;
 
 logic[$clog2(MAX_PACKET_SIZE)-1:0] packet_size;
+logic[$clog2(MAX_PACKET_SIZE)-1:0] data_start_index;
 logic data_cnt_done;
+
+/*****************************************/
+
+always_comb begin
+  // The packet size is computed based on the given configuration
+  packet_size = MIN_PACKET_SIZE + {3'b0, cr_ds_i} + {2'b0, (cr_p_i == '0 ? 1'b0 : 1'b1)} + {3'b0, cr_s_i};
+  // Index of bit0 in the data_q shift register
+  data_start_index = MAX_PACKET_SIZE - packet_size;
+  // A packet is terminated when this bit is set
+  data_cnt_done = data_cnt_q[packet_size];
+end
    
 always_comb begin : state_machine
   state_d = state_q;
@@ -92,11 +106,6 @@ always_comb begin : state_machine
   endcase
 end
 
-always_comb begin
-  packet_size = MIN_PACKET_SIZE + {3'b0, cr_ds_i} + {2'b0, (cr_p_i == '0 ? 1'b0 : 1'b1)} + {3'b0, cr_s_i};
-  data_cnt_done = data_cnt_q[packet_size];
-end
-
 always_comb begin : counters
   half_baud_cnt_d = 0;
   baud_cnt_d = 0;
@@ -104,16 +113,14 @@ always_comb begin : counters
 
   case(state_q)
     IDLE: begin
-      // We initialize the half_baud_rate counter at the start of the 
-      // start bit
+      // We initialize the half_baud_rate counter at the start of the start bit
       if(uart_rx_qqq == 0) begin
         half_baud_cnt_d = {1'b0, cr_clk_div_i[15:1]} - 2;
       end
     end
     START: begin
       half_baud_cnt_d = half_baud_cnt_q - 1;
-      // We initialize the data counter when reaching the middle of the 
-      // start bit
+      // We initialize the data counter when reaching the middle of the start bit
       if(half_baud_cnt_q == '0) begin
         baud_cnt_d = cr_clk_div_i - 1;
         data_cnt_d[0] = 1'b1;
@@ -121,14 +128,13 @@ always_comb begin : counters
     end
     DATA: begin
       if(baud_cnt_q == '0) begin
-        // When the baud interval has elapsed
-        // reset the baud counter
+        // When the baud interval has elapsed, reset the baud counter and decrement the data counter
         baud_cnt_d = cr_clk_div_i - 1;
-        // decrement the data counter
         data_cnt_d = {data_cnt_d[MAX_PACKET_SIZE-1:0], 1'b0};
       end else begin
         baud_cnt_d = baud_cnt_q - 1;
       end
+      // Reset the counter as it will not be incremented further
       if(data_cnt_done) begin
         data_cnt_d = '0;
       end
@@ -137,24 +143,31 @@ always_comb begin : counters
   endcase
 end
 
+always_comb begin : data_align
+  // Barrel shifter to align the data_q shift register output
+  data_shifted0 = data_start_index[0] ? {1'b0, data_q[MAX_PACKET_SIZE-1:1]} : data_q;
+  data_shifted  = data_start_index[1] ? {2'b0, data_shifted0[MAX_PACKET_SIZE-1:2]} : data_shifted0;
+end
+
 always_ff @(posedge clk_i) begin
   if(rst_i) begin
-    state_q <= IDLE;
+    state_q         <= IDLE;
 
-    uart_rx_q <= 1;
-    uart_rx_qq <= 1;
-    uart_rx_qqq <= 1;
+    uart_rx_q       <= 1;
+    uart_rx_qq      <= 1;
+    uart_rx_qqq     <= 1;
 
     half_baud_cnt_q <= '0;
-    baud_cnt_q <= '0;
-    data_q <= '0;
+    baud_cnt_q      <= '0;
+    data_q          <= '0;
+    data_cnt_q      <= '0;
   end else begin
     state_q <= state_d;
 
     // The receive input is registered three times to prevent
     // metastability issues
-    uart_rx_q <= uart_rx_i;
-    uart_rx_qq <= uart_rx_q;
+    uart_rx_q   <= uart_rx_i;
+    uart_rx_qq  <= uart_rx_q;
     uart_rx_qqq <= uart_rx_qq;
 
     // half baudrate counter used at the start of a packet to
@@ -169,13 +182,17 @@ always_ff @(posedge clk_i) begin
     if(state_q == DATA && baud_cnt_q == '0) begin
       data_q <= {uart_rx_qqq, data_q[10:1]};
     end
+    
+    // The data counter used to detect the end of packet
     data_cnt_q <= data_cnt_d;
-
-    output_valid_q <= output_valid_d;
   end
 end
 
-assign data_o = data_q >> (MAX_PACKET_SIZE - packet_size);
+/*****************************************/
+/*         Assign output signals         */
+/*****************************************/
+
+assign data_o = data_shifted;
 assign output_valid_o = data_cnt_done;
 
 endmodule // rx_frontend
