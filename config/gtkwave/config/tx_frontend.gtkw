@@ -1,15 +1,15 @@
 [*]
 [*] GTKWave Analyzer v3.4.0 (w)1999-2022 BSI
-[*] Sun May  5 16:00:52 2024
+[*] Sun May  5 19:55:19 2024
 [*]
 [dumpfile] "/Users/cchaine/Desktop/Documents/projects/.ecap5.nosync/design/wbuart/build/tests/waves/tx_frontend.vcd"
-[dumpfile_mtime] "Sun May  5 16:00:41 2024"
-[dumpfile_size] 16748
+[dumpfile_mtime] "Sun May  5 19:54:42 2024"
+[dumpfile_size] 108857
 [savefile] "/Users/cchaine/Desktop/Documents/projects/.ecap5.nosync/design/wbuart/config/gtkwave/config/tx_frontend.gtkw"
-[timestart] 1229
+[timestart] 5278
 [size] 1440 783
 [pos] -1 -1
-*-7.093879 459 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+*-6.093880 5360 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 [markername] AA
 [markername] BB
 [markername] CC
@@ -63,12 +63,13 @@ TOP.tb_tx_frontend.dr_i[7:0]
 [color] 5
 ^2 /Users/cchaine/Desktop/Documents/projects/.ecap5.nosync/design/wbuart/config/gtkwave/filters/tx_frontend_state_filter.gtkw
 TOP.tb_tx_frontend.dut.state_q[31:0]
-@25
+@24
 [color] 5
 TOP.tb_tx_frontend.dut.baud_cnt_q[15:0]
-@28
+@29
 [color] 5
-TOP.tb_tx_frontend.dut.bit_cnt_q[8:0]
+TOP.tb_tx_frontend.dut.bit_cnt_q[7:0]
+@28
 [color] 7
 TOP.tb_tx_frontend.uart_tx_o
 [color] 2

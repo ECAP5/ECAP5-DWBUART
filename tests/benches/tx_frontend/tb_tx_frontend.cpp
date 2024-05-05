@@ -863,7 +863,7 @@ void tb_tx_frontend_7O1(TB_Tx_frontend * tb) {
   core->cr_s_i = 0;
 
   core->transmit_i = 1;
-  core->dr_i = 0x3A;
+  core->dr_i = 0x7A;
 
   //=================================
   //      Tick (1)
@@ -963,7 +963,7 @@ void tb_tx_frontend_7O1(TB_Tx_frontend * tb) {
   //      Checks 
   
   tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 0));
+  tb->check(COND_output, (core->uart_tx_o == 1));
   tb->check(COND_done,   (core->done_o == 0));
 
   //=================================
@@ -975,7 +975,7 @@ void tb_tx_frontend_7O1(TB_Tx_frontend * tb) {
   //      Checks 
   
   tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_PARITY));
-  tb->check(COND_output, (core->uart_tx_o == 1));
+  tb->check(COND_output, (core->uart_tx_o == 0));
   tb->check(COND_done,   (core->done_o == 0));
 
   //=================================

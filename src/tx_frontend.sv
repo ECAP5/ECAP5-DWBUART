@@ -52,6 +52,7 @@ typedef enum {
 state_t state_d, state_q;
 
 logic[15:0] baud_cnt_d, baud_cnt_q;
+
 logic[$size(dr_i)-1:0] bit_cnt_d, bit_cnt_q;
 logic[$size(dr_i)-1:0] dr_d, dr_q;
 
@@ -112,7 +113,7 @@ always_comb begin : transmit
   uart_tx_d = 1;
 
   // Update the baud interval counter
-  if(baud_cnt_q == '0) begin
+  if(baud_cnt_q == '0 || (state_q == IDLE && transmit_i)) begin
     baud_cnt_d = cr_clk_div_i - 1;
   end else begin
     baud_cnt_d = baud_cnt_q - 1;
@@ -121,9 +122,9 @@ always_comb begin : transmit
   case(state_q)
     IDLE: begin
       if(transmit_i) begin
-        baud_cnt_d = cr_clk_div_i - 1;
-        dr_d = dr_i;
         bit_cnt_d = cr_ds_i ? (1 << 7) : (1 << 6);
+        dr_d = dr_i;
+        // Initialize the parity
         parity_d = cr_p_i[0] ^ dr_i[0];
       end
     end
@@ -132,10 +133,17 @@ always_comb begin : transmit
     end 
     DATA: begin
       uart_tx_d = dr_q[0];
+
+      // Wait for the end of a baud interval
       if(baud_cnt_q == '0) begin
+        // Updates the number of remaining data bits
         bit_cnt_d = {1'b0, bit_cnt_q[$size(dr_i)-1:1]};
         dr_d = {1'b0, dr_q[$size(dr_i)-1:1]};
+
+        // Update the parity with the sent bit
         parity_d = parity_q ^ dr_q[0];
+
+        // Set the number of stop bits for the stop state
         if(bit_cnt_q[0]) begin
           bit_cnt_d = cr_s_i ? (1 << 1) : (1 << 0);
         end
@@ -146,6 +154,8 @@ always_comb begin : transmit
     end
     STOP: begin
       uart_tx_d = 1'b1;
+
+      // Update the number of remaining stop bits
       if(baud_cnt_q == '0) begin
         bit_cnt_d = {1'b0, bit_cnt_q[$size(dr_i)-1:1]};
       end
@@ -155,6 +165,10 @@ end
 
 always_comb begin : done
   done_d = 0;
+  // The done signal is asserted while 
+  //   - in the stop STATE
+  //   - at the end of a baud interval
+  //   - during the last stop bit
   if(state_q == STOP && baud_cnt_q == '0 && bit_cnt_q[0]) begin
     done_d = 1;
   end
@@ -189,6 +203,10 @@ always_ff @(posedge clk_i) begin
     done_q <= done_d;
   end
 end
+
+/*****************************************/
+/*         Assign output signals         */
+/*****************************************/
 
 assign uart_tx_o = rst_i ? 1 : uart_tx_d;
 assign done_o = done_q;

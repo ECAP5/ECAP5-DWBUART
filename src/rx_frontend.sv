@@ -65,13 +65,17 @@ logic[15:0] half_baud_cnt_d, half_baud_cnt_q,
 
 logic[MAX_PACKET_SIZE:0]  frame_bit_cnt_d, frame_bit_cnt_q;
 
-logic[MAX_PACKET_SIZE-1:0] frame_d, frame_q, frame_shifted0, frame_shifted;
-
 logic[$clog2(MAX_PACKET_SIZE)-1:0] frame_size;
 logic[$clog2(MAX_PACKET_SIZE)-1:0] frame_start_index;
 logic frame_bit_cnt_done;
 
+/*****************************************/
+/*            Output signals             */
+/*****************************************/
+
 logic parity_d, parity_q;
+
+logic[MAX_PACKET_SIZE-1:0] frame_d, frame_q, frame_shifted0, frame_shifted;
 
 /*****************************************/
 
