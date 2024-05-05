@@ -84,7 +84,8 @@ macro(add_testbench module)
   list(APPEND TEST_OUTPUTS ${TEST_OUTPUT})
 endmacro()
 
-add_testbench(rx_frontend PUBLIC)
+add_testbench(rx_frontend)
+add_testbench(tx_frontend)
 
 # Main targets
 add_custom_target(build DEPENDS ${TEST_BINARIES})
