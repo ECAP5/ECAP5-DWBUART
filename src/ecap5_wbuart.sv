@@ -21,6 +21,23 @@
  */
 
 module ecap5_wbuart
+#(
+  localparam UART_SR   = 0,
+  localparam UART_CR   = 1,
+  localparam UART_RXDR = 2,
+  localparam UART_TXDR = 3,
+
+  // The minimum frame size is :
+  //   - 7 data bits
+  //   - 1 stop bit
+  localparam MIN_FRAME_SIZE = 8,
+  
+  // The maximum frame size is :
+  //   - 8 data bits
+  //   - 1 parity bit
+  //   - 2 stop bit
+  localparam MAX_FRAME_SIZE = 11
+)
 (
   input   logic         clk_i,
   input   logic         rst_i,
@@ -44,24 +61,73 @@ module ecap5_wbuart
   input  logic uart_rx_i,
   output logic uart_tx_o
 );
-localparam UART_SR = 0;
-localparam UART_CR = 1;
-localparam UART_RXDR = 2;
-localparam UART_TXDR = 3;
 
 /*****************************************/
 /*           Internal signals            */
 /*****************************************/
 
+logic[7:0]  mem_addr;
+logic       mem_read, mem_write;
+logic[31:0] mem_read_data, mem_write_data;
+
+logic[MAX_FRAME_SIZE-1:0] rx_frame;
+logic rx_parity;
+logic rx_valid;
+
+logic tx_transmit, tx_done;
 
 /*****************************************/
 /*        Memory mapped registers        */
 /*****************************************/
 
-logic[31:0] registers_d[0:3], 
+logic[31:0] registers_d[0:3],
             registers_q[0:3];
 
 /*****************************************/
 
+rx_frontend rx_frontend_inst (
+  .clk_i (clk_i),   .rst_i (rst_i),
+
+  .cr_clk_div_i   (registers_q[UART_CR][31:16]),
+  .cr_ds_i        (registers_q[UART_CR][4]),
+  .cr_s_i         (registers_q[UART_CR][3]),
+  .cr_p_i         (registers_q[UART_CR][2:1]),
+
+  .uart_rx_i      (uart_rx_i),
+  
+  .frame_o        (rx_frame),
+  .parity_o       (rx_parity),
+  .output_valid_o (rx_valid)
+);
+
+tx_frontend tx_frontend_inst (
+  .clk_i (clk_i),   .rst_i (rst_i),
+
+  .cr_clk_div_i   (registers_q[UART_CR][31:16]),
+  .cr_ds_i        (registers_q[UART_CR][4]),
+  .cr_s_i         (registers_q[UART_CR][3]),
+  .cr_p_i         (registers_q[UART_CR][2:1]),
+
+  .transmit_i     (tx_transmit),
+  .dr_i           (registers_q[UART_TXDR][7:0]),
+
+  .done_o         (tx_done),
+
+  .uart_tx_o      (uart_tx_o)
+);
+
+wb_interface wb_interface_inst (
+  .clk_i (clk_i),   .rst_i (rst_i),
+  
+  .wb_adr_i (wb_adr_i),  .wb_dat_o (wb_dat_o),  .wb_dat_i   (wb_dat_i),
+  .wb_we_i  (wb_we_i),   .wb_sel_i (wb_sel_i),  .wb_stb_i   (wb_stb_i),
+  .wb_ack_o (wb_ack_o),  .wb_cyc_i (wb_cyc_i),  .wb_stall_o (wb_stall_o),
+
+  .addr_o       (mem_addr),
+  .read_o       (mem_read),
+  .read_data_i  (mem_read_data),
+  .write_o      (mem_write),
+  .write_data_o (mem_write_data)
+);
 
 endmodule // ecap5_wbuart

@@ -35,6 +35,19 @@ enum CondId {
 };
 
 enum TestcaseId {
+  T_IDLE        = 1,
+  T_TX_7N1_B4   = 2,
+  T_TX_8O2_B100 = 3,
+  T_RX_7O1_B5   = 4,
+  T_RX_8E1_B101 = 5,
+  T_CR_RST      = 6,
+  T_RXDR_CLR    = 7,
+  T_RXNE        = 8,
+  T_TXE         = 9,
+  T_RXOE        = 10,
+  T_FE          = 11,
+  T_PE          = 12,
+  T_DISABLE     = 13
 };
 
 enum StateId {
@@ -55,8 +68,107 @@ public:
   }
   
   void _nop() {
+    this->core->wb_adr_i = 0;
+    this->core->wb_dat_i = 0;
+    this->core->wb_we_i = 0;
+    this->core->wb_sel_i = 0;
+    this->core->wb_stb_i = 0;
+    this->core->wb_cyc_i = 0;
+
+    this->core->uart_rx_i = 1;
   }
 };
+
+void tb_ecap5_wbuart_idle(TB_Ecap5_wbuart * tb) {
+  Vtb_ecap5_wbuart * core = tb->core;
+  core->testcase = T_IDLE;
+
+  tb->reset();
+}
+
+void tb_ecap5_wbuart_tx_7N1_B4(TB_Ecap5_wbuart * tb) {
+  Vtb_ecap5_wbuart * core = tb->core;
+  core->testcase = T_TX_7N1_B4;
+
+  tb->reset();
+}
+
+void tb_ecap5_wbuart_tx_8O2_B100(TB_Ecap5_wbuart * tb) {
+  Vtb_ecap5_wbuart * core = tb->core;
+  core->testcase = T_TX_8O2_B100;
+
+  tb->reset();
+}
+
+void tb_ecap5_wbuart_rx_7O1_B5(TB_Ecap5_wbuart * tb) {
+  Vtb_ecap5_wbuart * core = tb->core;
+  core->testcase = T_RX_7O1_B5;
+
+  tb->reset();
+}
+
+void tb_ecap5_wbuart_rx_8E1_B101(TB_Ecap5_wbuart * tb) {
+  Vtb_ecap5_wbuart * core = tb->core;
+  core->testcase = T_RX_8E1_B101;
+
+  tb->reset();
+}
+
+void tb_ecap5_wbuart_cr_rst(TB_Ecap5_wbuart * tb) {
+  Vtb_ecap5_wbuart * core = tb->core;
+  core->testcase = T_CR_RST;
+
+  tb->reset();
+}
+
+void tb_ecap5_wbuart_rxdr_clr(TB_Ecap5_wbuart * tb) {
+  Vtb_ecap5_wbuart * core = tb->core;
+  core->testcase = T_RXDR_CLR;
+
+  tb->reset();
+}
+
+void tb_ecap5_wbuart_rxne(TB_Ecap5_wbuart * tb) {
+  Vtb_ecap5_wbuart * core = tb->core;
+  core->testcase = T_RXNE;
+
+  tb->reset();
+}
+
+void tb_ecap5_wbuart_txe(TB_Ecap5_wbuart * tb) {
+  Vtb_ecap5_wbuart * core = tb->core;
+  core->testcase = T_TXE;
+
+  tb->reset();
+}
+
+void tb_ecap5_wbuart_rxoe(TB_Ecap5_wbuart * tb) {
+  Vtb_ecap5_wbuart * core = tb->core;
+  core->testcase = T_RXOE;
+
+  tb->reset();
+}
+
+void tb_ecap5_wbuart_fe(TB_Ecap5_wbuart * tb) {
+  Vtb_ecap5_wbuart * core = tb->core;
+  core->testcase = T_FE;
+
+  tb->reset();
+}
+
+void tb_ecap5_wbuart_pe(TB_Ecap5_wbuart * tb) {
+  Vtb_ecap5_wbuart * core = tb->core;
+  core->testcase = T_PE;
+
+  tb->reset();
+}
+
+void tb_ecap5_wbuart_disable(TB_Ecap5_wbuart * tb) {
+  Vtb_ecap5_wbuart * core = tb->core;
+  core->testcase = T_DISABLE;
+
+  tb->reset();
+}
 
 int main(int argc, char ** argv, char ** env) {
   srand(time(NULL));
@@ -72,10 +184,24 @@ int main(int argc, char ** argv, char ** env) {
 
   /************************************************************/
 
-  tb->tick();
-  tb->tick();
-  tb->tick();
-  tb->tick();
+  tb_ecap5_wbuart_idle(tb);
+
+  tb_ecap5_wbuart_tx_7N1_B4(tb);
+  tb_ecap5_wbuart_tx_8O2_B100(tb);
+  tb_ecap5_wbuart_rx_7O1_B5(tb);
+  tb_ecap5_wbuart_rx_8E1_B101(tb);
+
+  tb_ecap5_wbuart_cr_rst(tb);
+
+  tb_ecap5_wbuart_rxdr_clr(tb);
+
+  tb_ecap5_wbuart_rxne(tb);
+  tb_ecap5_wbuart_txe(tb);
+  tb_ecap5_wbuart_rxoe(tb);
+  tb_ecap5_wbuart_fe(tb);
+  tb_ecap5_wbuart_pe(tb);
+
+  tb_ecap5_wbuart_disable(tb);
 
   /************************************************************/
 

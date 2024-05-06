@@ -21,6 +21,10 @@
  */
 
 module rx_frontend
+#(
+  parameter MIN_FRAME_SIZE = 8,
+  parameter MAX_FRAME_SIZE = 11
+) 
 (
   input   logic         clk_i,
   input   logic         rst_i,
@@ -36,16 +40,6 @@ module rx_frontend
   output  logic         parity_o,
   output  logic         output_valid_o
 );
-// The minimum frame size is :
-//   - 7 data bits
-//   - 1 stop bit
-localparam MIN_PACKET_SIZE = 8;
-
-// The maximum frame size is :
-//   - 8 data bits
-//   - 1 parity bit
-//   - 2 stop bit
-localparam MAX_PACKET_SIZE = 11;
 
 /*****************************************/
 /*           Internal signals            */
@@ -63,10 +57,10 @@ logic uart_rx_q, uart_rx_qq, uart_rx_qqq;
 logic[15:0] half_baud_cnt_d, half_baud_cnt_q, 
                  baud_cnt_d,      baud_cnt_q;
 
-logic[MAX_PACKET_SIZE:0]  frame_bit_cnt_d, frame_bit_cnt_q;
+logic[MAX_FRAME_SIZE:0]  frame_bit_cnt_d, frame_bit_cnt_q;
 
-logic[$clog2(MAX_PACKET_SIZE)-1:0] frame_size;
-logic[$clog2(MAX_PACKET_SIZE)-1:0] frame_start_index;
+logic[$clog2(MAX_FRAME_SIZE)-1:0] frame_size;
+logic[$clog2(MAX_FRAME_SIZE)-1:0] frame_start_index;
 logic frame_bit_cnt_done;
 
 /*****************************************/
@@ -75,7 +69,7 @@ logic frame_bit_cnt_done;
 
 logic parity_d, parity_q;
 
-logic[MAX_PACKET_SIZE-1:0] frame_d, frame_q, frame_shifted0, frame_shifted;
+logic[MAX_FRAME_SIZE-1:0] frame_d, frame_q, frame_shifted0, frame_shifted;
 
 /*****************************************/
 
@@ -113,9 +107,9 @@ always_comb begin : sampling
   parity_d = parity_q;
 
   // The frame size is computed based on the given configuration
-  frame_size = MIN_PACKET_SIZE + {3'b0, cr_ds_i} + {2'b0, (cr_p_i == '0 ? 1'b0 : 1'b1)} + {3'b0, cr_s_i};
+  frame_size = MIN_FRAME_SIZE + {3'b0, cr_ds_i} + {2'b0, (cr_p_i == '0 ? 1'b0 : 1'b1)} + {3'b0, cr_s_i};
   // Index of bit0 in the frame_q shift register
-  frame_start_index = MAX_PACKET_SIZE - frame_size;
+  frame_start_index = MAX_FRAME_SIZE - frame_size;
   // A frame is terminated when this bit is set
   frame_bit_cnt_done = frame_bit_cnt_q[frame_size];
 
@@ -151,7 +145,7 @@ always_comb begin : sampling
         //   3. sample the input
         //   4. update the computed parity
         baud_cnt_d = cr_clk_div_i - 1;
-        frame_bit_cnt_d = {frame_bit_cnt_d[MAX_PACKET_SIZE-1:0], 1'b0};
+        frame_bit_cnt_d = {frame_bit_cnt_d[MAX_FRAME_SIZE-1:0], 1'b0};
         frame_d = {uart_rx_qqq, frame_q[10:1]};
         parity_d = parity_q ^ uart_rx_qqq;
       end else begin
@@ -168,8 +162,8 @@ end
 
 always_comb begin : frame_align
   // Barrel shifter to align the frame_q shift register output
-  frame_shifted0 = frame_start_index[0] ? {1'b0, frame_q[MAX_PACKET_SIZE-1:1]} : frame_q;
-  frame_shifted  = frame_start_index[1] ? {2'b0, frame_shifted0[MAX_PACKET_SIZE-1:2]} : frame_shifted0;
+  frame_shifted0 = frame_start_index[0] ? {1'b0, frame_q[MAX_FRAME_SIZE-1:1]} : frame_q;
+  frame_shifted  = frame_start_index[1] ? {2'b0, frame_shifted0[MAX_FRAME_SIZE-1:2]} : frame_shifted0;
 end
 
 always_ff @(posedge clk_i) begin

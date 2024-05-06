@@ -1,0 +1,84 @@
+[*]
+[*] GTKWave Analyzer v3.4.0 (w)1999-2022 BSI
+[*] Mon May  6 20:09:24 2024
+[*]
+[dumpfile] "/Users/cchaine/Desktop/Documents/projects/.ecap5.nosync/design/wbuart/build/tests/waves/ecap5_wbuart.vcd"
+[dumpfile_mtime] "Mon May  6 20:08:52 2024"
+[dumpfile_size] 8734
+[savefile] "/Users/cchaine/Desktop/Documents/projects/.ecap5.nosync/design/wbuart/config/gtkwave/config/ecap5_wbuart.gtkw"
+[timestart] 1
+[size] 1440 783
+[pos] -1 -1
+*-5.069452 50 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+[markername] AA
+[markername] BB
+[markername] CC
+[markername] DD
+[markername] EE
+[markername] FF
+[markername] GG
+[markername] HH
+[markername] II
+[markername] JJ
+[markername] KK
+[markername] LL
+[markername] MM
+[markername] NN
+[markername] OO
+[markername] PP
+[markername] QQ
+[markername] RR
+[markername] SS
+[markername] TT
+[markername] UU
+[markername] VV
+[markername] WW
+[markername] XX
+[markername] YY
+[markername] ZZ
+[treeopen] TOP.
+[treeopen] TOP.tb_ecap5_wbuart.
+[sst_width] 253
+[signals_width] 144
+[sst_expanded] 1
+[sst_vpaned_height] 209
+@2025
+[color] 1
+^1 /Users/cchaine/Desktop/Documents/projects/.ecap5.nosync/design/wbuart/config/gtkwave/filters/ecap5_wbuart_testcase_filter.gtkw
+TOP.tb_ecap5_wbuart.testcase[31:0]
+@28
+TOP.tb_ecap5_wbuart.clk_i
+TOP.tb_ecap5_wbuart.rst_i
+@800200
+-Wishbone
+@22
+[color] 2
+TOP.tb_ecap5_wbuart.wb_adr_i[31:0]
+[color] 2
+TOP.tb_ecap5_wbuart.wb_dat_i[31:0]
+[color] 2
+TOP.tb_ecap5_wbuart.wb_dat_o[31:0]
+@28
+[color] 2
+TOP.tb_ecap5_wbuart.wb_we_i
+@22
+[color] 2
+TOP.tb_ecap5_wbuart.wb_sel_i[3:0]
+@28
+[color] 2
+TOP.tb_ecap5_wbuart.wb_stb_i
+[color] 2
+TOP.tb_ecap5_wbuart.wb_ack_o
+[color] 2
+TOP.tb_ecap5_wbuart.wb_cyc_i
+[color] 2
+TOP.tb_ecap5_wbuart.wb_stall_o
+@1000200
+-Wishbone
+@28
+[color] 7
+TOP.tb_ecap5_wbuart.uart_rx_i
+[color] 7
+TOP.tb_ecap5_wbuart.uart_tx_o
+[pattern_trace] 1
+[pattern_trace] 0
