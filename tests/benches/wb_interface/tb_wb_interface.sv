@@ -20,8 +20,10 @@
  * along with ECAP5-WBUART.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-module ecap5_wbuart
+module tb_wb_interface
 (
+  input   int          testcase,
+
   input   logic         clk_i,
   input   logic         rst_i,
 
@@ -39,29 +41,34 @@ module ecap5_wbuart
   output  logic        wb_stall_o,
 
   //=================================
-  //    Serial interface
-  
-  input  logic uart_rx_i,
-  output logic uart_tx_o
+  //    Output interface
+
+  output  logic[7:0]   addr_o,
+  output  logic        read_o,
+  input   logic[31:0]  read_data_i,
+  output  logic        write_o,
+  output  logic[31:0]  write_data_o
 );
-localparam UART_SR = 0;
-localparam UART_CR = 1;
-localparam UART_RXDR = 2;
-localparam UART_TXDR = 3;
 
-/*****************************************/
-/*           Internal signals            */
-/*****************************************/
+wb_interface dut (
+  .clk_i           (clk_i),
+  .rst_i           (rst_i),
 
+  .wb_adr_i   (wb_adr_i),
+  .wb_dat_o   (wb_dat_o),
+  .wb_dat_i   (wb_dat_i),
+  .wb_we_i    (wb_we_i),
+  .wb_sel_i   (wb_sel_i),
+  .wb_stb_i   (wb_stb_i),
+  .wb_ack_o   (wb_ack_o),
+  .wb_cyc_i   (wb_cyc_i),
+  .wb_stall_o (wb_stall_o),
 
-/*****************************************/
-/*        Memory mapped registers        */
-/*****************************************/
+  .addr_o       (addr_o),
+  .read_o       (read_o),
+  .read_data_i  (read_data_i),
+  .write_o      (write_o),
+  .write_data_o (write_data_o)
+);
 
-logic[31:0] registers_d[0:3], 
-            registers_q[0:3];
-
-/*****************************************/
-
-
-endmodule // ecap5_wbuart
+endmodule // tb_wb_interface

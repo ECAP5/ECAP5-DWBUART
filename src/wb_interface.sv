@@ -20,7 +20,7 @@
  * along with ECAP5-WBUART.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-module ecap5_wbuart
+module wb_interface
 (
   input   logic         clk_i,
   input   logic         rst_i,
@@ -39,29 +39,67 @@ module ecap5_wbuart
   output  logic        wb_stall_o,
 
   //=================================
-  //    Serial interface
-  
-  input  logic uart_rx_i,
-  output logic uart_tx_o
-);
-localparam UART_SR = 0;
-localparam UART_CR = 1;
-localparam UART_RXDR = 2;
-localparam UART_TXDR = 3;
+  //    Output interface
 
+  output  logic[7:0]   addr_o,
+  output  logic        read_o,
+  input   logic[31:0]  read_data_i,
+  output  logic        write_o,
+  output  logic[31:0]  write_data_o
+);
 /*****************************************/
 /*           Internal signals            */
 /*****************************************/
 
+typedef enum logic[1:0] {
+  IDLE,
+  RESPONSE
+} state_t;
+state_t state_d, state_q;
 
 /*****************************************/
-/*        Memory mapped registers        */
+/*            Output signals             */
 /*****************************************/
 
-logic[31:0] registers_d[0:3], 
-            registers_q[0:3];
+logic wb_ack_d, wb_ack_q;
 
 /*****************************************/
 
+always_comb begin : wishbone
+  state_d = state_q;
+  wb_ack_d = 0;
 
-endmodule // ecap5_wbuart
+  case(state_q)
+    IDLE: begin
+      if(wb_stb_i && wb_cyc_i) begin
+        wb_ack_d = 1;
+        state_d = RESPONSE;
+      end
+    end
+    RESPONSE: begin
+      state_d = IDLE;
+    end
+    default: begin end
+  endcase
+end
+
+always_ff @(posedge clk_i) begin
+  if(rst_i) begin
+    state_q <= IDLE;
+    wb_ack_q <= 0;
+  end else begin
+    state_q  <=  state_d;
+    wb_ack_q <= wb_ack_d;
+  end
+end
+
+assign wb_ack_o = wb_ack_q;
+assign wb_dat_o = read_data_i;
+assign wb_stall_o = 0;
+
+assign addr_o = wb_adr_i[7:0];
+assign read_o  = wb_stb_i && wb_cyc_i && ~wb_we_i;
+assign write_o = wb_stb_i && wb_cyc_i && wb_we_i;
+assign write_data_o = wb_dat_i;
+
+endmodule // wb_interface
