@@ -37,7 +37,7 @@ enum CondId {
 };
 
 enum TestcaseId {
-  T_READ,
+  T_READ = 1,
   T_WRITE
 };
 
@@ -96,43 +96,140 @@ void tb_wb_interface_read(TB_Wb_interface * tb) {
   //      Set inputs
   
   tb->check(COND_output, (core->read_o == 0) &&
-                         (core->write_o == 0));
-
+                           (core->write_o == 0));
+  
   uint32_t addr = rand();
   tb->read(addr);
 
-  //=================================
-  //      Tick (0)
-  
-  tb->tick();
+  // Async logic
+  core->eval();
 
   //`````````````````````````````````
   //      Checks 
   
   tb->check(COND_output, (core->read_o == 1) &&
-                         (core->addr_o == addr) &&
+                         (core->addr_o == (addr & 0xFF)) &&
                          (core->write_o == 0));
+
+  //=================================
+  //      Tick (1)
+  
+  tb->tick();
 
   //`````````````````````````````````
   //      Set inputs
   
   tb->_nop();
   core->wb_cyc_i = 1;
-  
+
   uint32_t data = rand();
   core->read_data_i = data;
 
+  // Async logic
+  core->eval();
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_wishbone, (core->wb_ack_o == 1) &&
+                           (core->wb_dat_o == data));
+  tb->check(COND_output, (core->read_o == 0) &&
+                         (core->write_o == 0));
+
   //=================================
-  //      Tick (0)
+  //      Tick (2)
   
   tb->tick();
 
   //`````````````````````````````````
   //      Checks 
   
+  tb->check(COND_wishbone, (core->wb_ack_o == 0));
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->wb_cyc_i = 0;
+
+  core->read_data_i = 0;
+
+  //=================================
+  //      Tick (3)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Formal Checks 
+  
+  CHECK("tb_wb_interface.read.01",
+      tb->conditions[COND_output],
+      "Failed to implement the output logic", tb->err_cycles[COND_output]);
+
+  CHECK("tb_wb_interface.read.02",
+      tb->conditions[COND_wishbone],
+      "Failed to implement the wishbone protocol", tb->err_cycles[COND_wishbone]);
+}
+
+void tb_wb_interface_write(TB_Wb_interface * tb) {
+  Vtb_wb_interface * core = tb->core;
+  core->testcase = T_WRITE;
+
+  //=================================
+  //      Tick (0)
+  
+  tb->reset();
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  tb->check(COND_output, (core->read_o == 0) &&
+                           (core->write_o == 0));
+  
+  uint32_t addr = rand();
+  uint32_t data = rand();
+  tb->write(addr, data);
+
+  // Async logic
+  core->eval();
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_output, (core->read_o == 0) &&
+                         (core->addr_o == (addr & 0xFF)) &&
+                         (core->write_o == 1) &&
+                         (core->write_data_o == data));
+
+  //=================================
+  //      Tick (1)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  tb->_nop();
+  core->wb_cyc_i = 1;
+
+  // Async logic
+  core->eval();
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_wishbone, (core->wb_ack_o == 1));
   tb->check(COND_output, (core->read_o == 0) &&
                          (core->write_o == 0));
-  tb->check(COND_wishbone, (core->wb_ack_o == 1));
+
+  //=================================
+  //      Tick (2)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_wishbone, (core->wb_ack_o == 0));
 
   //`````````````````````````````````
   //      Set inputs
@@ -140,25 +237,18 @@ void tb_wb_interface_read(TB_Wb_interface * tb) {
   core->wb_cyc_i = 0;
 
   //=================================
-  //      Tick (0)
+  //      Tick (3)
   
   tb->tick();
 
   //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_output, (core->read_o == 0) &&
-                         (core->write_o == 0));
-  tb->check(COND_wishbone, (core->wb_ack_o == 0));
-
-  //`````````````````````````````````
   //      Formal Checks 
   
-  CHECK("tb_wb_uart.read.01",
+  CHECK("tb_wb_interface.write.01",
       tb->conditions[COND_output],
       "Failed to implement the output logic", tb->err_cycles[COND_output]);
 
-  CHECK("tb_wb_uart.read.02",
+  CHECK("tb_wb_interface.write.02",
       tb->conditions[COND_wishbone],
       "Failed to implement the wishbone protocol", tb->err_cycles[COND_wishbone]);
 }
@@ -177,6 +267,8 @@ int main(int argc, char ** argv, char ** env) {
 
   /************************************************************/
 
+  tb_wb_interface_read(tb);
+  tb_wb_interface_write(tb);
 
   /************************************************************/
 
