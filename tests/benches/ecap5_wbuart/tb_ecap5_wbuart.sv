@@ -66,3 +66,22 @@ ecap5_wbuart dut (
 );
 
 endmodule // tb_ecap5_wbuart
+
+`verilator_config
+
+public -module "ecap5_wbuart" -var "frontend_rst"
+
+public -module "ecap5_wbuart" -var "mem_addr"
+public -module "ecap5_wbuart" -var "mem_read"
+public -module "ecap5_wbuart" -var "mem_write"
+public -module "ecap5_wbuart" -var "mem_read_data"
+public -module "ecap5_wbuart" -var "mem_write_data"
+
+public -module "ecap5_wbuart" -var "rx_frame"
+public -module "ecap5_wbuart" -var "rx_parity"
+public -module "ecap5_wbuart" -var "rx_valid"
+
+public -module "ecap5_wbuart" -var "tx_transmit_q"
+public -module "ecap5_wbuart" -var "tx_done"
+
+public -module "ecap5_wbuart" -var "registers_q"

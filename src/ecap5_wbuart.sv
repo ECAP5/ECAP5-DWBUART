@@ -66,6 +66,8 @@ module ecap5_wbuart
 /*           Internal signals            */
 /*****************************************/
 
+logic frontend_rst;
+
 logic[7:0]  mem_addr;
 logic       mem_read, mem_write;
 logic[31:0] mem_read_data, mem_write_data;
@@ -74,7 +76,8 @@ logic[MAX_FRAME_SIZE-1:0] rx_frame;
 logic rx_parity;
 logic rx_valid;
 
-logic tx_transmit, tx_done;
+logic tx_transmit_d, tx_transmit_q,
+      tx_done;
 
 /*****************************************/
 /*        Memory mapped registers        */
@@ -86,7 +89,7 @@ logic[31:0] registers_d[0:3],
 /*****************************************/
 
 rx_frontend rx_frontend_inst (
-  .clk_i (clk_i),   .rst_i (rst_i),
+  .clk_i (clk_i),   .rst_i (frontend_rst),
 
   .cr_clk_div_i   (registers_q[UART_CR][31:16]),
   .cr_ds_i        (registers_q[UART_CR][4]),
@@ -101,14 +104,14 @@ rx_frontend rx_frontend_inst (
 );
 
 tx_frontend tx_frontend_inst (
-  .clk_i (clk_i),   .rst_i (rst_i),
+  .clk_i (clk_i),   .rst_i (frontend_rst),
 
   .cr_clk_div_i   (registers_q[UART_CR][31:16]),
   .cr_ds_i        (registers_q[UART_CR][4]),
   .cr_s_i         (registers_q[UART_CR][3]),
   .cr_p_i         (registers_q[UART_CR][2:1]),
 
-  .transmit_i     (tx_transmit),
+  .transmit_i     (tx_transmit_q),
   .dr_i           (registers_q[UART_TXDR][7:0]),
 
   .done_o         (tx_done),
@@ -129,5 +132,56 @@ wb_interface wb_interface_inst (
   .write_o      (mem_write),
   .write_data_o (mem_write_data)
 );
+
+always_comb begin : register_access
+  foreach(registers_d[i]) begin
+    registers_d[i] = registers_q[i];
+  end
+
+  // Set the data output for R and R/W registers
+  case(mem_addr[7:2])
+    UART_SR:   mem_read_data = registers_q[UART_SR];
+    UART_CR:   mem_read_data = registers_q[UART_CR];
+    UART_RXDR: mem_read_data = registers_q[UART_RXDR];
+    default:   mem_read_data = '0;
+  endcase
+
+  // Set the register data for R/W and W registers
+  if(mem_write) begin
+    case(mem_addr[7:2])
+      UART_CR:   registers_d[UART_CR]   = mem_write_data;
+      UART_TXDR: registers_d[UART_TXDR] = mem_write_data;
+      default: begin end
+    endcase 
+  end
+
+  // Reset UART_RXDR after reading
+  if(mem_read && mem_addr[7:2] == UART_RXDR) begin
+    registers_d[UART_RXDR] = '0;
+  end
+end
+
+always_comb begin : frontend_interface
+  frontend_rst = rst_i || (mem_write && mem_addr[7:2] == UART_CR);
+
+  tx_transmit_d = mem_write && (mem_addr[7:2] == UART_TXDR);
+end
+
+always_ff @(posedge clk_i) begin
+  if(rst_i) begin
+    registers_q[UART_SR] <= '0;
+    registers_q[UART_CR] <= '0;
+    registers_q[UART_RXDR] <= '0;
+    registers_q[UART_TXDR] <= '0;
+
+    tx_transmit_q <= 0;
+  end else begin
+    foreach(registers_q[i]) begin
+      registers_q[i] <= registers_d[i];
+    end
+
+    tx_transmit_q <= tx_transmit_d;
+  end
+end
 
 endmodule // ecap5_wbuart

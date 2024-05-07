@@ -125,7 +125,7 @@ always_comb begin : transmit
         bit_cnt_d = cr_ds_i ? (1 << 7) : (1 << 6);
         dr_d = dr_i;
         // Initialize the parity
-        parity_d = cr_p_i[0] ^ dr_i[0];
+        parity_d = cr_p_i[0];
       end
     end
     START: begin
