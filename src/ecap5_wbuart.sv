@@ -70,7 +70,8 @@ logic frontend_rst;
 
 logic[7:0]  mem_addr;
 logic       mem_read, mem_write;
-logic[31:0] mem_read_data, mem_write_data;
+logic[31:0] mem_read_data_d, mem_read_data_q, 
+            mem_write_data;
 
 logic[MAX_FRAME_SIZE-1:0] rx_frame;
 logic rx_parity;
@@ -128,22 +129,24 @@ wb_interface wb_interface_inst (
 
   .addr_o       (mem_addr),
   .read_o       (mem_read),
-  .read_data_i  (mem_read_data),
+  .read_data_i  (mem_read_data_q),
   .write_o      (mem_write),
   .write_data_o (mem_write_data)
 );
 
 always_comb begin : register_access
-  foreach(registers_d[i]) begin
-    registers_d[i] = registers_q[i];
-  end
+  registers_d[UART_SR]   = registers_q[UART_SR];
+  registers_d[UART_CR]   = registers_q[UART_CR];
+  registers_d[UART_RXDR] = registers_q[UART_RXDR];
+  registers_d[UART_TXDR] = registers_q[UART_TXDR];
 
   // Set the data output for R and R/W registers
+  mem_read_data_d = 0;
   case(mem_addr[7:2])
-    UART_SR:   mem_read_data = registers_q[UART_SR];
-    UART_CR:   mem_read_data = registers_q[UART_CR];
-    UART_RXDR: mem_read_data = registers_q[UART_RXDR];
-    default:   mem_read_data = '0;
+    UART_SR:   mem_read_data_d = registers_q[UART_SR];
+    UART_CR:   mem_read_data_d = registers_q[UART_CR];
+    UART_RXDR: mem_read_data_d = registers_q[UART_RXDR];
+    default:   mem_read_data_d = '0;
   endcase
 
   // Set the register data for R/W and W registers
@@ -155,9 +158,26 @@ always_comb begin : register_access
     endcase 
   end
 
+  // Set the TXE field
+  if(tx_done) begin
+    registers_d[UART_SR][1] = 1;
+  end
+
+  // Reset the TXE field
+  if(mem_write && (mem_addr[7:2] == UART_TXDR)) begin
+    registers_d[UART_SR][1] = 0;
+  end
+
+  // Set the RXDR register and RXNE field
+  if(rx_valid) begin
+    registers_d[UART_RXDR][MAX_FRAME_SIZE-1:0] = rx_frame;
+    registers_d[UART_SR][0] = 1;
+  end
+
   // Reset UART_RXDR after reading
   if(mem_read && mem_addr[7:2] == UART_RXDR) begin
     registers_d[UART_RXDR] = '0;
+    registers_d[UART_SR][0] = 0;
   end
 end
 
@@ -169,18 +189,23 @@ end
 
 always_ff @(posedge clk_i) begin
   if(rst_i) begin
-    registers_q[UART_SR] <= '0;
+    registers_q[UART_SR] <= 32'h2;
     registers_q[UART_CR] <= '0;
     registers_q[UART_RXDR] <= '0;
     registers_q[UART_TXDR] <= '0;
 
     tx_transmit_q <= 0;
+
+    mem_read_data_q <= '0;
   end else begin
-    foreach(registers_q[i]) begin
-      registers_q[i] <= registers_d[i];
-    end
+    registers_q[UART_SR] <= registers_d[UART_SR];
+    registers_q[UART_CR] <= registers_d[UART_CR];
+    registers_q[UART_RXDR] <= registers_d[UART_RXDR];
+    registers_q[UART_TXDR] <= registers_d[UART_TXDR];
 
     tx_transmit_q <= tx_transmit_d;
+
+    mem_read_data_q <= mem_read_data_d;
   end
 end
 

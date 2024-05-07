@@ -69,6 +69,8 @@ logic done_d, done_q;
 /*****************************************/
 
 always_comb begin : state_machine
+  state_d = state_q;
+
   case(state_q)
     IDLE: begin
       if(transmit_i) begin
@@ -118,6 +120,9 @@ always_comb begin : transmit
   end else begin
     baud_cnt_d = baud_cnt_q - 1;
   end
+
+  bit_cnt_d = bit_cnt_q;
+  parity_d = parity_q;
 
   case(state_q)
     IDLE: begin

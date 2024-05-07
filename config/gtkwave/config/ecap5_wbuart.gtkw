@@ -1,15 +1,15 @@
 [*]
 [*] GTKWave Analyzer v3.4.0 (w)1999-2022 BSI
-[*] Tue May  7 16:36:20 2024
+[*] Tue May  7 21:18:46 2024
 [*]
 [dumpfile] "/Users/cchaine/Desktop/Documents/projects/.ecap5.nosync/design/wbuart/build/tests/waves/ecap5_wbuart.vcd"
-[dumpfile_mtime] "Tue May  7 16:35:31 2024"
-[dumpfile_size] 14445
+[dumpfile_mtime] "Tue May  7 21:17:58 2024"
+[dumpfile_size] 22307
 [savefile] "/Users/cchaine/Desktop/Documents/projects/.ecap5.nosync/design/wbuart/config/gtkwave/config/ecap5_wbuart.gtkw"
-[timestart] 150
+[timestart] 204
 [size] 1440 783
 [pos] -1 -1
-*-5.069452 234 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+*-8.069452 119 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 [markername] AA
 [markername] BB
 [markername] CC
@@ -42,7 +42,7 @@
 [sst_width] 253
 [signals_width] 193
 [sst_expanded] 1
-[sst_vpaned_height] 293
+[sst_vpaned_height] 275
 @2024
 [color] 1
 ^1 /Users/cchaine/Desktop/Documents/projects/.ecap5.nosync/design/wbuart/config/gtkwave/filters/ecap5_wbuart_testcase_filter.gtkw
@@ -96,9 +96,12 @@ TOP.tb_ecap5_wbuart.dut.registers_q[3][31:0]
 -Registers
 @28
 TOP.tb_ecap5_wbuart.dut.frontend_rst
-@29
 TOP.tb_ecap5_wbuart.dut.tx_transmit_q
-@28
 TOP.tb_ecap5_wbuart.dut.tx_done
+TOP.tb_ecap5_wbuart.dut.rx_valid
+@22
+TOP.tb_ecap5_wbuart.dut.rx_frame[10:0]
+@28
+TOP.tb_ecap5_wbuart.dut.rx_parity
 [pattern_trace] 1
 [pattern_trace] 0
