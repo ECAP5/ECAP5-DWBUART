@@ -244,7 +244,7 @@ void tb_ecap5_wbuart_write_cr(TB_Ecap5_wbuart * tb) {
   
   tb->check(COND_reset,     (core->tb_ecap5_wbuart->dut->frontend_rst == 1));
   tb->check(COND_mem,       (core->wb_ack_o == 1));
-  tb->check(COND_registers, (tb->uart_cr() == 0xA5FA5FA5));
+  tb->check(COND_registers, (tb->uart_cr() == 0xA5FA0004));
 
   //`````````````````````````````````
   //      Set inputs
@@ -348,7 +348,7 @@ void tb_ecap5_wbuart_write_txdr(TB_Ecap5_wbuart * tb) {
   tb->check(COND_registers, ((tb->uart_sr() & 0x2) == 0));
   tb->check(COND_reset,     (core->tb_ecap5_wbuart->dut->frontend_rst == 0));
   tb->check(COND_mem,       (core->wb_ack_o == 1));
-  tb->check(COND_registers, (tb->uart_txdr() == 0xA5FA5FA5));
+  tb->check(COND_registers, (tb->uart_txdr() == 0x000000A5));
   tb->check(COND_tx,        (core->tb_ecap5_wbuart->dut->tx_transmit_q == 1));
 
   //`````````````````````````````````
@@ -563,7 +563,7 @@ void tb_ecap5_wbuart_read_rxdr(TB_Ecap5_wbuart * tb) {
   //      Checks 
   
   tb->check(COND_rx, (core->tb_ecap5_wbuart->dut->rx_valid == 0));
-  tb->check(COND_registers, (tb->uart_rxdr() == 0x35F) &&
+  tb->check(COND_registers, (tb->uart_rxdr() == 0x5F) &&
                             (tb->uart_sr() & 0x1));
 
   //=================================
@@ -574,7 +574,7 @@ void tb_ecap5_wbuart_read_rxdr(TB_Ecap5_wbuart * tb) {
   //`````````````````````````````````
   //      Checks 
   
-  tb->check(COND_registers, (tb->uart_rxdr() == 0x35F) &&
+  tb->check(COND_registers, (tb->uart_rxdr() == 0x5F) &&
                             (tb->uart_sr() & 0x1));
 
   //`````````````````````````````````
@@ -590,7 +590,7 @@ void tb_ecap5_wbuart_read_rxdr(TB_Ecap5_wbuart * tb) {
   //`````````````````````````````````
   //      Checks 
   
-  tb->check(COND_mem, (core->wb_dat_o == 0x35F));
+  tb->check(COND_mem, (core->wb_dat_o == 0x5F));
   tb->check(COND_registers, (tb->uart_rxdr() == 0) &&
                             ((tb->uart_sr() & 0x1) == 0));
 
@@ -618,23 +618,23 @@ void tb_ecap5_wbuart_read_rxdr(TB_Ecap5_wbuart * tb) {
   //`````````````````````````````````
   //      Formal Checks 
   
-  CHECK("tb_ecap5_wbuart.write_txdr.01",
+  CHECK("tb_ecap5_wbuart.write_rxdr.01",
       tb->conditions[COND_reset],
       "Failed to implement the frontend reset", tb->err_cycles[COND_reset]);
 
-  CHECK("tb_ecap5_wbuart.write_txdr.02",
+  CHECK("tb_ecap5_wbuart.write_rxdr.02",
       tb->conditions[COND_mem],
       "Failed to integrate the memory", tb->err_cycles[COND_mem]);
 
-  CHECK("tb_ecap5_wbuart.write_txdr.03",
+  CHECK("tb_ecap5_wbuart.write_rxdr.03",
       tb->conditions[COND_rx],
       "Failed to integrate the rx frontend", tb->err_cycles[COND_rx]);
 
-  CHECK("tb_ecap5_wbuart.write_txdr.04",
+  CHECK("tb_ecap5_wbuart.write_rxdr.04",
       tb->conditions[COND_tx],
       "Failed to integrate the tx frontend", tb->err_cycles[COND_tx]);
 
-  CHECK("tb_ecap5_wbuart.write_txdr.05",
+  CHECK("tb_ecap5_wbuart.write_rxdr.05",
       tb->conditions[COND_registers],
       "Failed to implement the memory-mapped registers", tb->err_cycles[COND_registers]);
 }
@@ -643,7 +643,200 @@ void tb_ecap5_wbuart_rxoe(TB_Ecap5_wbuart * tb) {
   Vtb_ecap5_wbuart * core = tb->core;
   core->testcase = T_RXOE;
 
+  //=================================
+  //      Tick (0)
+  
   tb->reset();
+
+  //`````````````````````````````````
+  //      Set inputs
+
+  uint32_t cr = (4 << 16) | (1 << 4) | (1 << 1) | 1;
+  tb->write(0x4, cr);
+
+  //=================================
+  //      Tick (1)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  tb->_nop();
+  core->wb_cyc_i = 1;
+
+  //=================================
+  //      Tick (2)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  tb->_nop();
+
+  //=================================
+  //      Tick (3)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (4-7)
+  
+  tb->n_tick(4);
+
+  //=================================
+  //      Tick (8-39)
+  
+  uint32_t data = 0x5F;
+  for(int i = 0; i < 8; i++) {
+    //`````````````````````````````````
+    //      Set inputs
+    
+    core->uart_rx_i = ((data >> i) & 0x1);
+
+    //=================================
+    //      Tick (...)
+    
+    tb->n_tick(4);
+  }
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (40-43)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (44-47)
+  
+  tb->n_tick(4);
+
+  //=================================
+  //      Tick (48)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_rx, (core->tb_ecap5_wbuart->dut->rx_valid == 1));
+
+  //=================================
+  //      Tick (49)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_rx, (core->tb_ecap5_wbuart->dut->rx_valid == 0));
+  tb->check(COND_registers, (tb->uart_rxdr() == 0x5F));
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (50-53)
+  
+  tb->n_tick(4);
+
+  //=================================
+  //      Tick (54-85)
+  
+  data = 0xF5;
+  for(int i = 0; i < 8; i++) {
+    //`````````````````````````````````
+    //      Set inputs
+    
+    core->uart_rx_i = ((data >> i) & 0x1);
+
+    //=================================
+    //      Tick (...)
+    
+    tb->n_tick(4);
+  }
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (86-89)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (90-3)
+  
+  tb->n_tick(4);
+
+  //=================================
+  //      Tick (94)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_rx, (core->tb_ecap5_wbuart->dut->rx_valid == 1));
+
+  //=================================
+  //      Tick (95)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_rx, (core->tb_ecap5_wbuart->dut->rx_valid == 0));
+  tb->check(COND_registers, ((tb->uart_sr() >> 2) & 0x1) &&
+                             (tb->uart_rxdr() == 0xF5));
+
+  //`````````````````````````````````
+  //      Formal Checks 
+  
+  CHECK("tb_ecap5_wbuart.rxoe.01",
+      tb->conditions[COND_reset],
+      "Failed to implement the frontend reset", tb->err_cycles[COND_reset]);
+
+  CHECK("tb_ecap5_wbuart.rxoe.02",
+      tb->conditions[COND_mem],
+      "Failed to integrate the memory", tb->err_cycles[COND_mem]);
+
+  CHECK("tb_ecap5_wbuart.rxoe.03",
+      tb->conditions[COND_rx],
+      "Failed to integrate the rx frontend", tb->err_cycles[COND_rx]);
+
+  CHECK("tb_ecap5_wbuart.rxoe.04",
+      tb->conditions[COND_tx],
+      "Failed to integrate the tx frontend", tb->err_cycles[COND_tx]);
+
+  CHECK("tb_ecap5_wbuart.rxoe.05",
+      tb->conditions[COND_registers],
+      "Failed to implement the memory-mapped registers", tb->err_cycles[COND_registers]);
 }
 
 void tb_ecap5_wbuart_fe(TB_Ecap5_wbuart * tb) {

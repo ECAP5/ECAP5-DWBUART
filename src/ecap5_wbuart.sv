@@ -204,6 +204,11 @@ always_comb begin : register_access
     rxdr_rxd_d = '0;
     sr_rxne_d = 0;
   end
+
+  // Receive error detection
+  if(rx_valid) begin
+    sr_rxoe_d = sr_rxne_q;
+  end
 end
 
 always_comb begin : frontend_interface
