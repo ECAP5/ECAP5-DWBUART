@@ -74,7 +74,7 @@ public -module "ecap5_wbuart" -var "frontend_rst"
 public -module "ecap5_wbuart" -var "mem_addr"
 public -module "ecap5_wbuart" -var "mem_read"
 public -module "ecap5_wbuart" -var "mem_write"
-public -module "ecap5_wbuart" -var "mem_read_data"
+public -module "ecap5_wbuart" -var "mem_read_data_q"
 public -module "ecap5_wbuart" -var "mem_write_data"
 
 public -module "ecap5_wbuart" -var "rx_frame"

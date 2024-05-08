@@ -63,6 +63,7 @@ logic[MAX_FRAME_SIZE:0]  frame_bit_cnt_d, frame_bit_cnt_q;
 logic[$clog2(MAX_FRAME_SIZE)-1:0] frame_size;
 logic[$clog2(MAX_FRAME_SIZE)-1:0] frame_start_index;
 logic frame_bit_cnt_done;
+logic data_bit_cnt_done_d, data_bit_cnt_done_q;
 
 /*****************************************/
 /*            Output signals             */
@@ -116,8 +117,10 @@ always_comb begin : sampling
   frame_start_index = MAX_FRAME_SIZE - frame_size;
   // A frame is terminated when this bit is set
   frame_bit_cnt_done = frame_bit_cnt_q[frame_size];
+  // The data field of the frame is terminated when this bit is set
+  data_bit_cnt_done_d = data_bit_cnt_done_q | (cr_ds_i ? frame_bit_cnt_q[8] : frame_bit_cnt_q[7]);
 
-  parity_bit = cr_ds_i ? frame_shifted[9] : frame_shifted[8];
+  parity_bit = cr_ds_i ? frame_shifted[8] : frame_shifted[7];
 
   case(state_q)
     IDLE: begin
@@ -153,13 +156,14 @@ always_comb begin : sampling
         baud_cnt_d = cr_clk_div_i - 1;
         frame_bit_cnt_d = {frame_bit_cnt_d[MAX_FRAME_SIZE-1:0], 1'b0};
         frame_d = {uart_rx_qqq, frame_q[10:1]};
-        parity_d = parity_q ^ uart_rx_qqq;
+        parity_d = parity_q ^ (uart_rx_qqq & (~data_bit_cnt_done_q));
       end else begin
         baud_cnt_d = baud_cnt_q - 1;
       end
       // Reset the counter as it will not be incremented further
       if(frame_bit_cnt_done) begin
         frame_bit_cnt_d = '0;
+        data_bit_cnt_done_d = 0;
       end
     end
     default: begin end
@@ -180,11 +184,12 @@ always_ff @(posedge clk_i) begin
     uart_rx_qq      <= 1;
     uart_rx_qqq     <= 1;
 
-    half_baud_cnt_q <= '0;
-    baud_cnt_q      <= '0;
-    frame_q         <= '0;
-    frame_bit_cnt_q <= '0;
-    parity_q        <=  0;
+    half_baud_cnt_q     <= '0;
+    baud_cnt_q          <= '0;
+    frame_q             <= '0;
+    frame_bit_cnt_q     <= '0;
+    data_bit_cnt_done_q <=  0;
+    parity_q            <=  0;
   end else begin
     state_q <= state_d;
 
@@ -204,8 +209,11 @@ always_ff @(posedge clk_i) begin
     // The frame shift register
     frame_q <= frame_d;
     
-    // The data counter used to detect the end of frame
+    // The counter used to detect the end of frame
     frame_bit_cnt_q <= frame_bit_cnt_d;
+
+    // Signal used to end the parity computation
+    data_bit_cnt_done_q <= data_bit_cnt_done_d;
 
     // Computed parity
     parity_q <= parity_d;
@@ -217,6 +225,9 @@ end
 /*****************************************/
 
 assign frame_o = frame_shifted;
+// A parity error is detected when
+//  - The computed parity is different than the received parity bit
+//  - Parity detection is enabled
 assign parity_err_o = (parity_q ^ parity_bit) & (cr_p_i[0] | cr_p_i[1]);
 assign output_valid_o = frame_bit_cnt_done;
 

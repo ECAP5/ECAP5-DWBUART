@@ -49,9 +49,9 @@ UART_CR contains the control for selecting the UART baudrate, parity, size and s
     - S
     - *Stop bit selector*
        
-      0 |tab| One stop bit
+      0 |tab| 1 stop bit
 
-      2 |tab| Two stop bits
+      2 |tab| 1.5 stop bits
   * - 2-1
     - P
     - *Parity bit selector*

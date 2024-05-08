@@ -176,9 +176,9 @@ always_comb begin : register_access
     case(mem_addr[7:2])
       UART_CR: begin
         cr_clk_div_d = mem_write_data[31:16];
-        cr_s_d = mem_write_data[4];
-        cr_p_d = mem_write_data[3:2];
-        cr_ds_d = mem_write_data[1];
+        cr_ds_d = mem_write_data[4];
+        cr_s_d = mem_write_data[3];
+        cr_p_d = mem_write_data[2:1];
       end
       UART_TXDR: txdr_txd_d = mem_write_data[7:0];
       default: begin end
