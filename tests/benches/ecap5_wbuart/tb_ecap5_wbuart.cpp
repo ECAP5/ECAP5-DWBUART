@@ -130,6 +130,29 @@ public:
   uint32_t uart_txdr() {
     return core->tb_ecap5_wbuart->dut->txdr_txd_q;
   }
+
+  void send(uint32_t data, uint32_t clk_div, uint8_t ds, uint8_t p, uint8_t s) {
+    // Start bit
+    this->core->uart_rx_i = 0;
+    this->n_tick(clk_div);
+    // Data bits
+    uint8_t num_data_bits = ds ? 8 : 7;
+    uint8_t parity = p & 0x1;
+    for(int i = 0; i < num_data_bits; i++) {
+      this->core->uart_rx_i = (data >> i) & 0x1;
+      parity ^= (data >> i) & 0x1;
+      this->n_tick(clk_div);
+    }
+    // Parity bits
+    this->core->uart_rx_i = parity;
+    this->n_tick(clk_div);
+    // Stop bits
+    uint8_t num_stop_bits = s ? 2 : 1;
+    for(int i = 0; i < num_stop_bits; i++) {
+      this->core->uart_rx_i = 1;
+      this->n_tick(clk_div);
+    }
+  }
 };
 
 void tb_ecap5_wbuart_idle(TB_Ecap5_wbuart * tb) {
@@ -680,51 +703,10 @@ void tb_ecap5_wbuart_rxoe(TB_Ecap5_wbuart * tb) {
   
   tb->tick();
 
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
   //=================================
-  //      Tick (4-7)
+  //      Tick (4-47)
   
-  tb->n_tick(4);
-
-  //=================================
-  //      Tick (8-39)
-  
-  uint32_t data = 0x5F;
-  for(int i = 0; i < 8; i++) {
-    //`````````````````````````````````
-    //      Set inputs
-    
-    core->uart_rx_i = ((data >> i) & 0x1);
-
-    //=================================
-    //      Tick (...)
-    
-    tb->n_tick(4);
-  }
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (40-43)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (44-47)
-  
-  tb->n_tick(4);
+  tb->send(0x5F, 4, 1, 1, 0);
 
   //=================================
   //      Tick (48)
@@ -747,51 +729,10 @@ void tb_ecap5_wbuart_rxoe(TB_Ecap5_wbuart * tb) {
   tb->check(COND_rx, (core->tb_ecap5_wbuart->dut->rx_valid == 0));
   tb->check(COND_registers, (tb->uart_rxdr() == 0x5F));
 
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
   //=================================
-  //      Tick (50-53)
+  //      Tick (50-93)
   
-  tb->n_tick(4);
-
-  //=================================
-  //      Tick (54-85)
-  
-  data = 0xF5;
-  for(int i = 0; i < 8; i++) {
-    //`````````````````````````````````
-    //      Set inputs
-    
-    core->uart_rx_i = ((data >> i) & 0x1);
-
-    //=================================
-    //      Tick (...)
-    
-    tb->n_tick(4);
-  }
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (86-89)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (90-3)
-  
-  tb->n_tick(4);
+  tb->send(0xF5, 4, 1, 1, 0);
 
   //=================================
   //      Tick (94)
@@ -814,6 +755,79 @@ void tb_ecap5_wbuart_rxoe(TB_Ecap5_wbuart * tb) {
   tb->check(COND_rx, (core->tb_ecap5_wbuart->dut->rx_valid == 0));
   tb->check(COND_registers, ((tb->uart_sr() >> 2) & 0x1) &&
                              (tb->uart_rxdr() == 0xF5));
+
+  //`````````````````````````````````
+  //      Set inputs
+
+  tb->read(0x8);
+
+  //=================================
+  //      Tick (96)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_registers, ((tb->uart_sr() >> 2) & 0x1) &&
+                             (tb->uart_rxdr() == 0x0));
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  tb->_nop();
+  core->wb_cyc_i = 1;
+
+  //=================================
+  //      Tick (97)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  tb->_nop();
+
+  //=================================
+  //      Tick (98)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Set inputs
+
+  tb->read(0x0);
+
+  //=================================
+  //      Tick (99)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_registers, (((tb->uart_sr() >> 2) & 0x1) == 0));
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  tb->_nop();
+  core->wb_cyc_i = 1;
+
+  //=================================
+  //      Tick (100)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  tb->_nop();
+
+  //=================================
+  //      Tick (101)
+  
+  tb->tick();
 
   //`````````````````````````````````
   //      Formal Checks 

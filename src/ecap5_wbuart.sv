@@ -207,7 +207,13 @@ always_comb begin : register_access
 
   // Receive error detection
   if(rx_valid) begin
-    sr_rxoe_d = sr_rxne_q;
+    sr_rxoe_d = sr_rxne_q | sr_rxoe_q;
+  end
+
+  if(mem_read && mem_addr[7:2] == UART_SR) begin
+    sr_pe_d = 0;
+    sr_fe_d = 0;
+    sr_rxoe_d = 0;
   end
 end
 

@@ -34,6 +34,8 @@ Status register (UART_SR)
   * - 4
     - PE
     - *Parity Error*
+
+      This bit is cleared after reading it.
        
       0 |tab| No parity error
 
@@ -42,12 +44,16 @@ Status register (UART_SR)
     - FE
     - *Framing Error*
 
+      This bit is cleared after reading it.
+
       0 |tab| No framing error
 
       1 |tab| Framing error detected
   * - 2
     - RXOE
     - *Receive Overflow Error*
+
+      This bit is cleared after reading it.
 
       0 |tab| No received overflow error
 
