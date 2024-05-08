@@ -103,6 +103,33 @@ public:
       this->tick();
     }
   } 
+
+  uint32_t uart_sr() {
+    uint32_t reg = 0;
+    reg |= core->tb_ecap5_wbuart->dut->sr_pe_q << 4;
+    reg |= core->tb_ecap5_wbuart->dut->sr_fe_q << 3;
+    reg |= core->tb_ecap5_wbuart->dut->sr_rxoe_q << 2;
+    reg |= core->tb_ecap5_wbuart->dut->sr_txe_q << 1;
+    reg |= core->tb_ecap5_wbuart->dut->sr_rxne_q;
+    return reg;
+  }
+
+  uint32_t uart_cr() {
+    uint32_t reg = 0;
+    reg |= core->tb_ecap5_wbuart->dut->cr_clk_div_q << 16;
+    reg |= core->tb_ecap5_wbuart->dut->cr_s_q << 4;
+    reg |= core->tb_ecap5_wbuart->dut->cr_p_q << 2;
+    reg |= core->tb_ecap5_wbuart->dut->cr_ds_q << 1;
+    return reg;
+  }
+
+  uint32_t uart_rxdr() {
+    return core->tb_ecap5_wbuart->dut->rxdr_rxd_q;
+  }
+
+  uint32_t uart_txdr() {
+    return core->tb_ecap5_wbuart->dut->txdr_txd_q;
+  }
 };
 
 void tb_ecap5_wbuart_idle(TB_Ecap5_wbuart * tb) {
@@ -124,10 +151,10 @@ void tb_ecap5_wbuart_idle(TB_Ecap5_wbuart * tb) {
   tb->check(COND_tx,        (core->tb_ecap5_wbuart->dut->tx_transmit_q == 0) &&
                             (core->tb_ecap5_wbuart->dut->tx_done == 0) &&
                             (core->uart_tx_o == 1));
-  tb->check(COND_registers, (core->tb_ecap5_wbuart->dut->registers_q[0] == 2) &&
-                            (core->tb_ecap5_wbuart->dut->registers_q[1] == 0) &&
-                            (core->tb_ecap5_wbuart->dut->registers_q[2] == 0) &&
-                            (core->tb_ecap5_wbuart->dut->registers_q[3] == 0));
+  tb->check(COND_registers, (tb->uart_sr() == 2) &&
+                            (tb->uart_cr() == 0) &&
+                            (tb->uart_rxdr() == 0) &&
+                            (tb->uart_txdr() == 0));
 
   //=================================
   //      Tick (1)
@@ -144,10 +171,10 @@ void tb_ecap5_wbuart_idle(TB_Ecap5_wbuart * tb) {
   tb->check(COND_tx,        (core->tb_ecap5_wbuart->dut->tx_transmit_q == 0) &&
                             (core->tb_ecap5_wbuart->dut->tx_done == 0) &&
                             (core->uart_tx_o == 1));
-  tb->check(COND_registers, (core->tb_ecap5_wbuart->dut->registers_q[0] == 2) &&
-                            (core->tb_ecap5_wbuart->dut->registers_q[1] == 0) &&
-                            (core->tb_ecap5_wbuart->dut->registers_q[2] == 0) &&
-                            (core->tb_ecap5_wbuart->dut->registers_q[3] == 0));
+  tb->check(COND_registers, (tb->uart_sr() == 2) &&
+                            (tb->uart_cr() == 0) &&
+                            (tb->uart_rxdr() == 0) &&
+                            (tb->uart_txdr() == 0));
 
   //=================================
   //      Tick (2)
@@ -164,10 +191,10 @@ void tb_ecap5_wbuart_idle(TB_Ecap5_wbuart * tb) {
   tb->check(COND_tx,        (core->tb_ecap5_wbuart->dut->tx_transmit_q == 0) &&
                             (core->tb_ecap5_wbuart->dut->tx_done == 0) &&
                             (core->uart_tx_o == 1));
-  tb->check(COND_registers, (core->tb_ecap5_wbuart->dut->registers_q[0] == 2) &&
-                            (core->tb_ecap5_wbuart->dut->registers_q[1] == 0) &&
-                            (core->tb_ecap5_wbuart->dut->registers_q[2] == 0) &&
-                            (core->tb_ecap5_wbuart->dut->registers_q[3] == 0));
+  tb->check(COND_registers, (tb->uart_sr() == 2) &&
+                            (tb->uart_cr() == 0) &&
+                            (tb->uart_rxdr() == 0) &&
+                            (tb->uart_txdr() == 0));
 
   //`````````````````````````````````
   //      Formal Checks 
@@ -217,7 +244,7 @@ void tb_ecap5_wbuart_write_cr(TB_Ecap5_wbuart * tb) {
   
   tb->check(COND_reset,     (core->tb_ecap5_wbuart->dut->frontend_rst == 1));
   tb->check(COND_mem,       (core->wb_ack_o == 1));
-  tb->check(COND_registers, (core->tb_ecap5_wbuart->dut->registers_q[1] == 0xA5FA5FA5));
+  tb->check(COND_registers, (tb->uart_cr() == 0xA5FA5FA5));
 
   //`````````````````````````````````
   //      Set inputs
@@ -271,7 +298,7 @@ void tb_ecap5_wbuart_write_txdr(TB_Ecap5_wbuart * tb) {
   //`````````````````````````````````
   //      Checks 
   
-  tb->check(COND_registers, (core->tb_ecap5_wbuart->dut->registers_q[0] & 0x2));
+  tb->check(COND_registers, (tb->uart_sr() & 0x2));
 
   //`````````````````````````````````
   //      Set inputs
@@ -318,10 +345,10 @@ void tb_ecap5_wbuart_write_txdr(TB_Ecap5_wbuart * tb) {
   //`````````````````````````````````
   //      Checks 
   
-  tb->check(COND_registers, ((core->tb_ecap5_wbuart->dut->registers_q[0] & 0x2) == 0));
+  tb->check(COND_registers, ((tb->uart_sr() & 0x2) == 0));
   tb->check(COND_reset,     (core->tb_ecap5_wbuart->dut->frontend_rst == 0));
   tb->check(COND_mem,       (core->wb_ack_o == 1));
-  tb->check(COND_registers, (core->tb_ecap5_wbuart->dut->registers_q[3] == 0xA5FA5FA5));
+  tb->check(COND_registers, (tb->uart_txdr() == 0xA5FA5FA5));
   tb->check(COND_tx,        (core->tb_ecap5_wbuart->dut->tx_transmit_q == 1));
 
   //`````````````````````````````````
@@ -404,7 +431,7 @@ void tb_ecap5_wbuart_write_txdr(TB_Ecap5_wbuart * tb) {
   //      Checks 
   
   tb->check(COND_tx, (core->tb_ecap5_wbuart->dut->tx_done == 0));
-  tb->check(COND_registers, (core->tb_ecap5_wbuart->dut->registers_q[0] & 0x2));
+  tb->check(COND_registers, (tb->uart_sr() & 0x2));
 
   //`````````````````````````````````
   //      Formal Checks 
@@ -536,8 +563,8 @@ void tb_ecap5_wbuart_read_rxdr(TB_Ecap5_wbuart * tb) {
   //      Checks 
   
   tb->check(COND_rx, (core->tb_ecap5_wbuart->dut->rx_valid == 0));
-  tb->check(COND_registers, (core->tb_ecap5_wbuart->dut->registers_q[2] == 0x35F) &&
-                            (core->tb_ecap5_wbuart->dut->registers_q[0] & 0x1));
+  tb->check(COND_registers, (tb->uart_rxdr() == 0x35F) &&
+                            (tb->uart_sr() & 0x1));
 
   //=================================
   //      Tick (50)
@@ -547,8 +574,8 @@ void tb_ecap5_wbuart_read_rxdr(TB_Ecap5_wbuart * tb) {
   //`````````````````````````````````
   //      Checks 
   
-  tb->check(COND_registers, (core->tb_ecap5_wbuart->dut->registers_q[2] == 0x35F) &&
-                            (core->tb_ecap5_wbuart->dut->registers_q[0] & 0x1));
+  tb->check(COND_registers, (tb->uart_rxdr() == 0x35F) &&
+                            (tb->uart_sr() & 0x1));
 
   //`````````````````````````````````
   //      Set inputs
@@ -564,8 +591,8 @@ void tb_ecap5_wbuart_read_rxdr(TB_Ecap5_wbuart * tb) {
   //      Checks 
   
   tb->check(COND_mem, (core->wb_dat_o == 0x35F));
-  tb->check(COND_registers, (core->tb_ecap5_wbuart->dut->registers_q[2] == 0) &&
-                            ((core->tb_ecap5_wbuart->dut->registers_q[0] & 0x1) == 0));
+  tb->check(COND_registers, (tb->uart_rxdr() == 0) &&
+                            ((tb->uart_sr() & 0x1) == 0));
 
   //`````````````````````````````````
   //      Set inputs

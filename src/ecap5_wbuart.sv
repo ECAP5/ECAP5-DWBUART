@@ -84,18 +84,29 @@ logic tx_transmit_d, tx_transmit_q,
 /*        Memory mapped registers        */
 /*****************************************/
 
-logic[31:0] registers_d[0:3],
-            registers_q[0:3];
+logic[15:0] cr_clk_div_d, cr_clk_div_q;
+logic       cr_ds_d, cr_ds_q,
+            cr_s_d, cr_s_q;
+logic[1:0]  cr_p_d, cr_p_q;
+
+logic sr_pe_d, sr_pe_q,
+      sr_fe_d, sr_fe_q,
+      sr_rxoe_d, sr_rxoe_q,
+      sr_txe_d, sr_txe_q,
+      sr_rxne_d, sr_rxne_q;
+
+logic[7:0] rxdr_rxd_d, rxdr_rxd_q;
+logic[7:0] txdr_txd_d, txdr_txd_q;
 
 /*****************************************/
 
 rx_frontend rx_frontend_inst (
   .clk_i (clk_i),   .rst_i (frontend_rst),
 
-  .cr_clk_div_i   (registers_q[UART_CR][31:16]),
-  .cr_ds_i        (registers_q[UART_CR][4]),
-  .cr_s_i         (registers_q[UART_CR][3]),
-  .cr_p_i         (registers_q[UART_CR][2:1]),
+  .cr_clk_div_i   (cr_clk_div_q),
+  .cr_ds_i        (cr_ds_q),
+  .cr_s_i         (cr_s_q),
+  .cr_p_i         (cr_p_q),
 
   .uart_rx_i      (uart_rx_i),
   
@@ -107,13 +118,13 @@ rx_frontend rx_frontend_inst (
 tx_frontend tx_frontend_inst (
   .clk_i (clk_i),   .rst_i (frontend_rst),
 
-  .cr_clk_div_i   (registers_q[UART_CR][31:16]),
-  .cr_ds_i        (registers_q[UART_CR][4]),
-  .cr_s_i         (registers_q[UART_CR][3]),
-  .cr_p_i         (registers_q[UART_CR][2:1]),
+  .cr_clk_div_i   (cr_clk_div_q),
+  .cr_ds_i        (cr_ds_q),
+  .cr_s_i         (cr_s_q),
+  .cr_p_i         (cr_p_q),
 
   .transmit_i     (tx_transmit_q),
-  .dr_i           (registers_q[UART_TXDR][7:0]),
+  .dr_i           (txdr_txd_q),
 
   .done_o         (tx_done),
 
@@ -135,49 +146,63 @@ wb_interface wb_interface_inst (
 );
 
 always_comb begin : register_access
-  registers_d[UART_SR]   = registers_q[UART_SR];
-  registers_d[UART_CR]   = registers_q[UART_CR];
-  registers_d[UART_RXDR] = registers_q[UART_RXDR];
-  registers_d[UART_TXDR] = registers_q[UART_TXDR];
+  cr_clk_div_d = cr_clk_div_q;
+  cr_ds_d      = cr_ds_q;
+  cr_s_d       = cr_s_q;
+  cr_p_d       = cr_p_q;
+
+  sr_pe_d      = sr_pe_q;
+  sr_fe_d      = sr_fe_q;
+  sr_rxoe_d    = sr_rxoe_q;
+  sr_txe_d     = sr_txe_q;
+  sr_rxne_d    = sr_rxne_q;
+
+  rxdr_rxd_d   = rxdr_rxd_q;
+  txdr_txd_d   = txdr_txd_q;
 
   // Set the data output for R and R/W registers
   mem_read_data_d = 0;
   case(mem_addr[7:2])
-    UART_SR:   mem_read_data_d = registers_q[UART_SR];
-    UART_CR:   mem_read_data_d = registers_q[UART_CR];
-    UART_RXDR: mem_read_data_d = registers_q[UART_RXDR];
+    UART_SR:   mem_read_data_d = {27'b0, sr_pe_q, sr_fe_q, sr_rxoe_q, sr_txe_q, sr_rxne_q};
+    UART_CR:   mem_read_data_d = {cr_clk_div_q, 11'b0, cr_s_q, cr_p_q, cr_ds_q, 1'b1};
+    UART_RXDR: mem_read_data_d = {24'b0, rxdr_rxd_q};
     default:   mem_read_data_d = '0;
   endcase
 
   // Set the register data for R/W and W registers
   if(mem_write) begin
     case(mem_addr[7:2])
-      UART_CR:   registers_d[UART_CR]   = mem_write_data;
-      UART_TXDR: registers_d[UART_TXDR] = mem_write_data;
+      UART_CR: begin
+        cr_clk_div_d = mem_write_data[31:16];
+        cr_s_d = mem_write_data[4];
+        cr_p_d = mem_write_data[3:2];
+        cr_ds_d = mem_write_data[1];
+      end
+      UART_TXDR: txdr_txd_d = mem_write_data[7:0];
       default: begin end
     endcase 
   end
 
   // Set the TXE field
   if(tx_done) begin
-    registers_d[UART_SR][1] = 1;
+    sr_txe_d = 1;
   end
 
   // Reset the TXE field
   if(mem_write && (mem_addr[7:2] == UART_TXDR)) begin
-    registers_d[UART_SR][1] = 0;
+    sr_txe_d = 0;
   end
 
   // Set the RXDR register and RXNE field
   if(rx_valid) begin
-    registers_d[UART_RXDR][MAX_FRAME_SIZE-1:0] = rx_frame;
-    registers_d[UART_SR][0] = 1;
+    rxdr_rxd_d = rx_frame[7:0];
+    sr_rxne_d = 1;
   end
 
   // Reset UART_RXDR after reading
   if(mem_read && mem_addr[7:2] == UART_RXDR) begin
-    registers_d[UART_RXDR] = '0;
-    registers_d[UART_SR][0] = 0;
+    rxdr_rxd_d = '0;
+    sr_rxne_d = 0;
   end
 end
 
@@ -189,19 +214,37 @@ end
 
 always_ff @(posedge clk_i) begin
   if(rst_i) begin
-    registers_q[UART_SR] <= 32'h2;
-    registers_q[UART_CR] <= '0;
-    registers_q[UART_RXDR] <= '0;
-    registers_q[UART_TXDR] <= '0;
+    cr_clk_div_q <= '0;
+    cr_ds_q <= 0;
+    cr_s_q <= 0;
+    cr_p_q <= '0;
+
+    sr_pe_q <= 0;
+    sr_fe_q <= 0;
+    sr_rxoe_q <= 0;
+    sr_txe_q <= 1;
+    sr_rxne_q <= 0;
+
+    rxdr_rxd_q <= '0;
+    txdr_txd_q <= '0;
 
     tx_transmit_q <= 0;
 
     mem_read_data_q <= '0;
   end else begin
-    registers_q[UART_SR] <= registers_d[UART_SR];
-    registers_q[UART_CR] <= registers_d[UART_CR];
-    registers_q[UART_RXDR] <= registers_d[UART_RXDR];
-    registers_q[UART_TXDR] <= registers_d[UART_TXDR];
+    cr_clk_div_q <= cr_clk_div_d;
+    cr_ds_q <= cr_ds_d;
+    cr_s_q <= cr_s_d;
+    cr_p_q <= cr_p_d;
+
+    sr_pe_q <= sr_pe_d;
+    sr_fe_q <= sr_fe_d;
+    sr_rxoe_q <= sr_rxoe_d;
+    sr_txe_q <= sr_txe_d;
+    sr_rxne_q <= sr_rxne_d;
+
+    rxdr_rxd_q <= rxdr_rxd_d;
+    txdr_txd_q <= txdr_txd_d;
 
     tx_transmit_q <= tx_transmit_d;
 
