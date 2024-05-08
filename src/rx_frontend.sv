@@ -37,7 +37,8 @@ module rx_frontend
   input   logic         uart_rx_i,
 
   output  logic[10:0]   frame_o,
-  output  logic         parity_o,
+  output  logic         parity_err_o,
+  output  logic         frame_err_o,
   output  logic         output_valid_o
 );
 
@@ -67,7 +68,10 @@ logic frame_bit_cnt_done;
 /*            Output signals             */
 /*****************************************/
 
+// Computed parity
 logic parity_d, parity_q;
+// Received parity
+logic parity_bit;
 
 logic[MAX_FRAME_SIZE-1:0] frame_d, frame_q, frame_shifted0, frame_shifted;
 
@@ -112,6 +116,8 @@ always_comb begin : sampling
   frame_start_index = MAX_FRAME_SIZE - frame_size;
   // A frame is terminated when this bit is set
   frame_bit_cnt_done = frame_bit_cnt_q[frame_size];
+
+  parity_bit = cr_ds_i ? frame_shifted[9] : frame_shifted[8];
 
   case(state_q)
     IDLE: begin
@@ -211,7 +217,7 @@ end
 /*****************************************/
 
 assign frame_o = frame_shifted;
-assign parity_o = parity_q;
+assign parity_err_o = (parity_q ^ parity_bit) & (cr_p_i[0] | cr_p_i[1]);
 assign output_valid_o = frame_bit_cnt_done;
 
 endmodule // rx_frontend

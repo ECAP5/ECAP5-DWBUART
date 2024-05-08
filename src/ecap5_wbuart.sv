@@ -74,7 +74,8 @@ logic[31:0] mem_read_data_d, mem_read_data_q,
             mem_write_data;
 
 logic[MAX_FRAME_SIZE-1:0] rx_frame;
-logic rx_parity;
+logic rx_parity_err;
+logic rx_frame_err;
 logic rx_valid;
 
 logic tx_transmit_d, tx_transmit_q,
@@ -111,7 +112,8 @@ rx_frontend rx_frontend_inst (
   .uart_rx_i      (uart_rx_i),
   
   .frame_o        (rx_frame),
-  .parity_o       (rx_parity),
+  .parity_err_o   (rx_parity_err),
+  .frame_err_o    (rx_frame_err),
   .output_valid_o (rx_valid)
 );
 
@@ -207,6 +209,7 @@ always_comb begin : register_access
 
   // Receive error detection
   if(rx_valid) begin
+    sr_pe_d = rx_parity_err;
     sr_rxoe_d = sr_rxne_q | sr_rxoe_q;
   end
 

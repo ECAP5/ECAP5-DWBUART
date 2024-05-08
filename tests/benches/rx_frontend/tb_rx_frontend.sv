@@ -35,7 +35,8 @@ module tb_rx_frontend
   input   logic         uart_rx_i,
 
   output  logic[10:0]   frame_o,
-  output  logic         parity_o,
+  output  logic         parity_err_o,
+  output  logic         frame_err_o,
   output  logic         output_valid_o
 );
 
@@ -51,7 +52,8 @@ rx_frontend dut (
   .uart_rx_i       (uart_rx_i),
                  
   .frame_o         (frame_o),
-  .parity_o        (parity_o),
+  .parity_err_o    (parity_err_o),
+  .frame_err_o     (frame_err_o),
   .output_valid_o  (output_valid_o)
 );
 

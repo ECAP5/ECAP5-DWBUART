@@ -2941,7 +2941,7 @@ void tb_rx_frontend_parity_even(TB_Rx_frontend * tb) {
   //`````````````````````````````````
   //      Checks 
   
-  tb->check(COND_parity, (core->parity_o == 0));
+  tb->check(COND_parity, (core->parity_err_o == 1));
   tb->check(COND_valid,  (core->output_valid_o == 1));
 
   //`````````````````````````````````
@@ -3017,7 +3017,7 @@ void tb_rx_frontend_parity_even(TB_Rx_frontend * tb) {
   //`````````````````````````````````
   //      Set inputs
   
-  core->uart_rx_i = 0;
+  core->uart_rx_i = 1;
 
   //=================================
   //      Tick (71-74)
@@ -3027,7 +3027,7 @@ void tb_rx_frontend_parity_even(TB_Rx_frontend * tb) {
   //`````````````````````````````````
   //      Set inputs
   
-  core->uart_rx_i = 0;
+  core->uart_rx_i = 1;
 
   //=================================
   //      Tick (75-78)
@@ -3052,7 +3052,7 @@ void tb_rx_frontend_parity_even(TB_Rx_frontend * tb) {
   //`````````````````````````````````
   //      Checks 
   
-  tb->check(COND_parity, (core->parity_o == 1));
+  tb->check(COND_parity, (core->parity_err_o == 0));
   tb->check(COND_valid,  (core->output_valid_o == 1));
 
   //`````````````````````````````````
@@ -3197,7 +3197,7 @@ void tb_rx_frontend_parity_odd(TB_Rx_frontend * tb) {
   //`````````````````````````````````
   //      Checks 
   
-  tb->check(COND_parity, (core->parity_o == 1));
+  tb->check(COND_parity, (core->parity_err_o == 0));
   tb->check(COND_valid,  (core->output_valid_o == 1));
 
   //`````````````````````````````````
@@ -3273,7 +3273,7 @@ void tb_rx_frontend_parity_odd(TB_Rx_frontend * tb) {
   //`````````````````````````````````
   //      Set inputs
   
-  core->uart_rx_i = 0;
+  core->uart_rx_i = 1;
 
   //=================================
   //      Tick (71-74)
@@ -3283,7 +3283,7 @@ void tb_rx_frontend_parity_odd(TB_Rx_frontend * tb) {
   //`````````````````````````````````
   //      Set inputs
   
-  core->uart_rx_i = 0;
+  core->uart_rx_i = 1;
 
   //=================================
   //      Tick (75-78)
@@ -3308,7 +3308,7 @@ void tb_rx_frontend_parity_odd(TB_Rx_frontend * tb) {
   //`````````````````````````````````
   //      Checks 
   
-  tb->check(COND_parity, (core->parity_o == 0));
+  tb->check(COND_parity, (core->parity_err_o == 1));
   tb->check(COND_valid,  (core->output_valid_o == 1));
 
   //`````````````````````````````````
