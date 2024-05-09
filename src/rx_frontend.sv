@@ -20,12 +20,10 @@
  * along with ECAP5-WBUART.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-module rx_frontend
-#(
+module rx_frontend #(
   parameter MIN_FRAME_SIZE = 8,
   parameter MAX_FRAME_SIZE = 11
-) 
-(
+)(
   input   logic         clk_i,
   input   logic         rst_i,
 

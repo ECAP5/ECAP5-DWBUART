@@ -20,8 +20,7 @@
  * along with ECAP5-WBUART.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-module ecap5_wbuart
-#(
+module ecap5_wbuart #(
   localparam UART_SR   = 0,
   localparam UART_CR   = 1,
   localparam UART_RXDR = 2,
@@ -37,8 +36,7 @@ module ecap5_wbuart
   //   - 1 parity bit
   //   - 2 stop bit
   localparam MAX_FRAME_SIZE = 11
-)
-(
+)(
   input   logic         clk_i,
   input   logic         rst_i,
 
@@ -101,7 +99,10 @@ logic[7:0] txdr_txd_d, txdr_txd_q;
 
 /*****************************************/
 
-rx_frontend rx_frontend_inst (
+rx_frontend #(
+  .MIN_FRAME_SIZE(MIN_FRAME_SIZE),
+  .MAX_FRAME_SIZE(MAX_FRAME_SIZE)
+) rx_frontend_inst (
   .clk_i (clk_i),   .rst_i (frontend_rst),
 
   .cr_clk_div_i   (cr_clk_div_q),
@@ -117,7 +118,10 @@ rx_frontend rx_frontend_inst (
   .output_valid_o (rx_valid)
 );
 
-tx_frontend tx_frontend_inst (
+tx_frontend #(
+  .MIN_FRAME_SIZE(MIN_FRAME_SIZE),
+  .MAX_FRAME_SIZE(MAX_FRAME_SIZE)
+) tx_frontend_inst (
   .clk_i (clk_i),   .rst_i (frontend_rst),
 
   .cr_clk_div_i   (cr_clk_div_q),
@@ -214,6 +218,7 @@ always_comb begin : register_access
     sr_rxoe_d = sr_rxne_q | sr_rxoe_q;
   end
 
+  // Reset UART_SR error fields after reading UART_SR
   if(mem_read && mem_addr[7:2] == UART_SR) begin
     sr_pe_d = 0;
     sr_fe_d = 0;
@@ -222,8 +227,10 @@ always_comb begin : register_access
 end
 
 always_comb begin : frontend_interface
+  // Reset the frontends after either a reset or a write to UART_CR
   frontend_rst = rst_i || (mem_write && mem_addr[7:2] == UART_CR);
 
+  // Transmit after a write to UART_TXDR
   tx_transmit_d = mem_write && (mem_addr[7:2] == UART_TXDR);
 end
 
