@@ -70,3 +70,4 @@ list(APPEND CMAKE_MODULE_PATH "${sphinx_cmake_SOURCE_DIR}/cmake")
 # Include subdirectories
 
 add_subdirectory(docs)
+add_subdirectory(tests)

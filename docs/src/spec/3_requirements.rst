@@ -121,6 +121,10 @@ Memory interface
 
    Any read to the registers shall return 0 while the EN field of UART_CR is deasserted.
 
+.. requirement:: F_RESET_03
+
+   Any change to UART_SR shall reset the peripheral.
+
 .. todo:: Add wishbone requirements
 
 Serial protocol
