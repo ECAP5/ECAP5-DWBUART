@@ -68,37 +68,37 @@ Memory-Mapped Interface
     - 32
     - R
     - 0000_0000h
-    - :ref:`UART_SR <ARCH_UART_SR>`
+    - :ref:`UART_SR <SPEC_UART_SR>`
   * - 0000_0004h
     - Control register (UART_CR)
     - 32
     - R/W
     - 0000_0000h
-    - :ref:`UART_CR <ARCH_UART_CR>`
+    - :ref:`UART_CR <SPEC_UART_CR>`
   * - 0000_0008h
     - Receive Data register (UART_RXDR)
     - 32
     - R
     - 0000_0000h
-    - :ref:`UART_RXDR <ARCH_UART_RXDR>`
+    - :ref:`UART_RXDR <SPEC_UART_RXDR>`
   * - 0000_000Ch
     - Transmit Data register (UART_TXDR)
     - 32
     - W
     - 0000_0000h
-    - :ref:`UART_TXDR <ARCH_UART_TXDR>`
+    - :ref:`UART_TXDR <SPEC_UART_TXDR>`
 
-.. _ARCH_UART_SR:
-.. include:: ../arch/content/uart_sr.rst
+.. _SPEC_UART_SR:
+.. include:: ../spec/content/uart_sr.rst
 
-.. _ARCH_UART_CR:
-.. include:: ../arch/content/uart_cr.rst
+.. _SPEC_UART_CR:
+.. include:: ../spec/content/uart_cr.rst
 
-.. _ARCH_UART_RXDR:
-.. include:: ../arch/content/uart_rxdr.rst
+.. _SPEC_UART_RXDR:
+.. include:: ../spec/content/uart_rxdr.rst
 
-.. _ARCH_UART_TXDR:
-.. include:: ../arch/content/uart_txdr.rst
+.. _SPEC_UART_TXDR:
+.. include:: ../spec/content/uart_txdr.rst
 
 
 Assumptions and Dependencies

@@ -40,14 +40,14 @@ Memory Map and Registers
     - :ref:`UART_TXDR <GUIDE_UART_TXDR>`
 
 .. _GUIDE_UART_SR:
-.. include:: ../arch/content/uart_sr.rst
+.. include:: ../spec/content/uart_sr.rst
 
 .. _GUIDE_UART_CR:
-.. include:: ../arch/content/uart_cr.rst
+.. include:: ../spec/content/uart_cr.rst
 
 .. _GUIDE_UART_RXDR:
-.. include:: ../arch/content/uart_rxdr.rst
+.. include:: ../spec/content/uart_rxdr.rst
 
 .. _GUIDE_UART_TXDR:
-.. include:: ../arch/content/uart_txdr.rst
+.. include:: ../spec/content/uart_txdr.rst
 

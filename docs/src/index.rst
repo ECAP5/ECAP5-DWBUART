@@ -41,4 +41,4 @@ License
    :maxdepth: 8
    :caption: Specifications
 
-   arch/index
+   spec/index

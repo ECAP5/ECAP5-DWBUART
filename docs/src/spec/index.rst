@@ -1,5 +1,5 @@
-Architecture Document
-=====================
+Specification Document
+======================
 
 .. image:: ../assets/architecture.svg
 
