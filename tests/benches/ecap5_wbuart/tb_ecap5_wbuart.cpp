@@ -49,9 +49,7 @@ enum TestcaseId {
   T_RXOE                  = 5,
   T_FE                    = 6,
   T_PE                    = 7,
-  T_WRITE_CR_MID_RX_FRAME = 8,
-  T_WRITE_CR_MID_TX_FRAME = 9,
-  T_FULL_DUPLEX           = 10
+  T_FULL_DUPLEX           = 8
 };
 
 enum StateId {
@@ -1099,25 +1097,166 @@ void tb_ecap5_wbuart_fe(TB_Ecap5_wbuart * tb) {
       "Failed to implement the memory-mapped registers", tb->err_cycles[COND_registers]);
 }
 
-void tb_ecap5_wbuart_write_cr_mid_rx_frame(TB_Ecap5_wbuart * tb) {
-  Vtb_ecap5_wbuart * core = tb->core;
-  core->testcase = T_WRITE_CR_MID_RX_FRAME;
-
-  tb->reset();
-}
-
-void tb_ecap5_wbuart_write_cr_mid_tx_frame(TB_Ecap5_wbuart * tb) {
-  Vtb_ecap5_wbuart * core = tb->core;
-  core->testcase = T_WRITE_CR_MID_TX_FRAME;
-
-  tb->reset();
-}
-
 void tb_ecap5_wbuart_full_duplex(TB_Ecap5_wbuart * tb) {
   Vtb_ecap5_wbuart * core = tb->core;
   core->testcase = T_FULL_DUPLEX;
 
+  //=================================
+  //      Tick (0)
+  
   tb->reset();
+
+  //`````````````````````````````````
+  //      set inputs
+
+  uint32_t cr = (4 << 16) | (1 << 3) | 1;
+  tb->write(0x4, cr);
+
+  //=================================
+  //      tick (1)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      set inputs
+  
+  tb->_nop();
+  core->wb_cyc_i = 1;
+
+  //=================================
+  //      tick (2)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      set inputs
+  
+  tb->_nop();
+
+  //=================================
+  //      tick (3-46)
+  
+  tb->send(0xFF, 4, 1, 0, 1, 0, 0);
+
+  //=================================
+  //      tick (47)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      set inputs
+
+  tb->write(0xC, 0xAF);
+
+  //=================================
+  //      tick (48)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      set inputs
+  
+  tb->_nop();
+  core->wb_cyc_i = 1;
+
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      tick (49)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      set inputs
+  
+  core->wb_cyc_i = 0;
+
+  //=================================
+  //      Tick (50-52)
+  
+  tb->n_tick(3);
+
+  //=================================
+  //      Tick (53-84)
+  
+  uint32_t data = 0x5F;
+  for(int i = 0; i < 8; i++) {
+    //`````````````````````````````````
+    //      Set inputs
+    
+    core->uart_rx_i = ((data >> i) & 0x1);
+
+    //=================================
+    //      Tick (...)
+    
+    tb->n_tick(4);
+  }
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (85-88)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (89-92)
+  
+  tb->n_tick(4);
+
+  //=================================
+  //      Tick (93)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_rx, (core->tb_ecap5_wbuart->dut->rx_valid == 1));
+  tb->check(COND_tx, (core->tb_ecap5_wbuart->dut->tx_done == 1));
+
+  //=================================
+  //      Tick (94)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_rx, (core->tb_ecap5_wbuart->dut->rx_valid == 0));
+  tb->check(COND_registers, (tb->uart_rxdr() == 0x5F) &&
+                            (tb->uart_sr() == 0x1F));
+
+  //`````````````````````````````````
+  //      Formal Checks 
+  
+  CHECK("tb_ecap5_wbuart.full_duplex.01",
+      tb->conditions[COND_reset],
+      "Failed to implement the frontend reset", tb->err_cycles[COND_reset]);
+
+  CHECK("tb_ecap5_wbuart.full_duplex.02",
+      tb->conditions[COND_mem],
+      "Failed to integrate the memory", tb->err_cycles[COND_mem]);
+
+  CHECK("tb_ecap5_wbuart.full_duplex.03",
+      tb->conditions[COND_rx],
+      "Failed to integrate the rx frontend", tb->err_cycles[COND_rx]);
+
+  CHECK("tb_ecap5_wbuart.full_duplex.04",
+      tb->conditions[COND_tx],
+      "Failed to integrate the tx frontend", tb->err_cycles[COND_tx]);
+
+  CHECK("tb_ecap5_wbuart.full_duplex.05",
+      tb->conditions[COND_registers],
+      "Failed to implement the memory-mapped registers", tb->err_cycles[COND_registers]);
 }
 
 int main(int argc, char ** argv, char ** env) {
@@ -1143,9 +1282,6 @@ int main(int argc, char ** argv, char ** env) {
   tb_ecap5_wbuart_rxoe(tb);
   tb_ecap5_wbuart_fe(tb);
   tb_ecap5_wbuart_pe(tb);
-
-  tb_ecap5_wbuart_write_cr_mid_rx_frame(tb);
-  tb_ecap5_wbuart_write_cr_mid_tx_frame(tb);
 
   tb_ecap5_wbuart_full_duplex(tb);
 
