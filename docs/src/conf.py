@@ -42,6 +42,7 @@ html_theme_options = {
 html_css_files = [
     'css/custom.css'
 ]
+html_favicon = 'assets/favicon.ico'
 
 
 todo_include_todos = True
