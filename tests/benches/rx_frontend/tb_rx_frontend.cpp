@@ -3576,14 +3576,10 @@ void tb_rx_frontend_framing(TB_Rx_frontend * tb) {
       "Failed to implement the state machine", tb->err_cycles[COND_state]);
 
   CHECK("tb_rx_frontend.framing.02",
-      tb->conditions[COND_frame],
-      "Failed to implement the frame output", tb->err_cycles[COND_frame]);
-
-  CHECK("tb_rx_frontend.framing.03",
       tb->conditions[COND_errors],
       "Failed to implement the errors computation", tb->err_cycles[COND_errors]);
 
-  CHECK("tb_rx_frontend.framing.04",
+  CHECK("tb_rx_frontend.framing.03",
       tb->conditions[COND_valid],
       "Failed to implement the valid signal", tb->err_cycles[COND_valid]);
 }

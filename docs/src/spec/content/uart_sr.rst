@@ -51,11 +51,11 @@ Status register (UART_SR)
       1 |tab| Framing error detected
   * - 2
     - RXOE
-    - *Receive Overflow Error*
+    - *Receive Overrun Error*
 
       This bit is cleared after reading it.
 
-      0 |tab| No received overflow error
+      0 |tab| No received overrun error
 
       1 |tab| A packet was received but RXNE is asserted
   * - 1
