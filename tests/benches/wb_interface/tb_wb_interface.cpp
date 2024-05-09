@@ -96,7 +96,7 @@ void tb_wb_interface_read(TB_Wb_interface * tb) {
   //      Set inputs
   
   tb->check(COND_output, (core->read_o == 0) &&
-                           (core->write_o == 0));
+                         (core->write_o == 0));
   
   uint32_t addr = rand();
   tb->read(addr);

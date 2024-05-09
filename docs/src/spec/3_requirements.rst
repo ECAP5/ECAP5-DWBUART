@@ -177,26 +177,31 @@ Memory interface
 .. requirement:: F_RESET_03
    :derivedfrom: U_REGISTERS_01
 
-   Any change to UART_SR shall cancel both ongoing tranmissions and receptions.
-
-.. todo:: Add wishbone requirements
+   Any change to UART_CR shall cancel both ongoing tranmissions and receptions.
 
 Serial protocol
 ^^^^^^^^^^^^^^^
 
 .. requirement:: F_UART_01
-
+  :derivedfrom: U_UART_01, U_UART_02
    The following frame format shall be used to encode and decode transit/receive data.
 
 .. image:: ../assets/uart.svg
 
 .. requirement:: F_UART_02
+   :derivedfrom: U_PARITY_BIT_01, U_DATA_SIZE_01, U_STOP_BIT_01
 
    The number of data bits, parity bits and stop bits shall match the configuration provided in UART_CR.
 
 .. requirement:: F_UART_03
+   :derivedfrom: U_BAUD_RATE_01
 
    The time Tbr shall be equal to the product of the CLK_DIV field of UART_CR with the period of clk_i.
+
+.. requirement:: F_UART_04
+   :derivedfrom: U_UART_03
+
+   Parallel transmission/reception shall be supported.
 
 Receive
 ^^^^^^^
@@ -238,11 +243,6 @@ Transmit
    :derivedfrom: U_UART_01
 
    The peripheral shall transmit the TXD field of UART_TXDR after a write to UART_TXDR when the TXE field of UART_SR is deasserted, with a sample interval defined in number of clk_i edges by the field CLK_DIV field of UART_CR.
-
-.. requirement:: F_TRANSMIT_02
-   :derivedfrom: U_UART_01
-
-   The peripheral shall reset the UART_TXDR register after transmitting the stop bits and assert the TXE field of UART_SR.
 
 Non-functional Requirements
 ---------------------------
