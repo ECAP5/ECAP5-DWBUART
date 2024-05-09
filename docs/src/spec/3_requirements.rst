@@ -105,11 +105,6 @@ Functional Requirements
 
    The uart_tx_o signal shall be asserted while rst_i is asserted.
 
-.. requirement:: F_ENABLE_01
-
-   The uart_tx_o signal shall be asserted while the EN field of UART_CR is deasserted.
-
-
 Memory interface
 ^^^^^^^^^^^^^^^^
 
@@ -117,13 +112,13 @@ Memory interface
   
    The UART_RXDR register shall be reset after being read and the RXNE field of UART_SR shall be deasserted.
 
-.. requirement:: F_ENABLE_02
-
-   Any read to the registers shall return 0 while the EN field of UART_CR is deasserted.
+.. requirement:: F_READ_02
+  
+   The following fields of UART_SR shall be reset after being read : PE, FE and RXOE.
 
 .. requirement:: F_RESET_03
 
-   Any change to UART_SR shall reset the peripheral.
+   Any change to UART_SR shall cancel both ongoing tranmissions and receptions.
 
 .. todo:: Add wishbone requirements
 
@@ -137,11 +132,11 @@ Receive
 
 .. requirement:: F_RECEIVE_01
 
-   The peripheral shall sample the uart_rx_i signal with an sample interval defined in number of clk_i edges by the field CLK_DIV field of UART_CR.
+   The peripheral shall sample the uart_rx_i signal with a sample interval defined in number of clk_i edges by the field CLK_DIV field of UART_CR.
 
 .. requirement:: F_RECEIVE_02
 
-   The peripheral shall set the value of the RXD field of UART_RXDR when it latches the stop bit.
+   The peripheral shall set the value of the RXD field of UART_RXDR after latching the stop bit.
 
 .. requirement:: F_RECEIVE_03
 
@@ -149,22 +144,22 @@ Receive
 
 .. requirement:: F_RECEIVE_ERROR_01
 
-   The peripheral shall assert the PE field of UART_SR when the 1-bit sum of the received bits is not equal to the received parity bit.
+   The peripheral shall assert the PE field of UART_SR when the result of the xor of all the received bits is not equal to the received parity bit.
 
 .. requirement:: F_RECEIVE_ERROR_02
 
-   The peripheral shall assert the FE field of UART_SR when received stop bit is deasserted.
+   The peripheral shall assert the FE field of UART_SR when the received stop bit is zero instead of one.
 
 .. requirement:: F_RECEIVE_ERROR_03
 
-   The peripheral shall assert the RXOE field of UART_SR when it latches the stop bit while the RXNE field of UART_SR is asserted.
+   The peripheral shall assert the RXOE field of UART_SR after latching the stop bit while the RXNE field of UART_SR is asserted.
 
 Transmit
 ^^^^^^^^
 
 .. requirement:: F_TRANSMIT_01
 
-   The peripheral shall transmit the TXD field of UART_TXDR after a write to UART_TXDR when the TXE field of UART_SR is deasserted, with a sample interval defined in number of clk_i edges by the field CLK_DIV field of UART_CR
+   The peripheral shall transmit the TXD field of UART_TXDR after a write to UART_TXDR when the TXE field of UART_SR is deasserted, with a sample interval defined in number of clk_i edges by the field CLK_DIV field of UART_CR.
 
 .. requirement:: F_TRANSMIT_02
 

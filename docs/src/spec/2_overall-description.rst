@@ -19,6 +19,10 @@ Serial Interface
 
    The peripheral shall perform parallel-to-serial conversion of the received data.
 
+.. requirement:: U_UART_03
+
+   The peripheral shall support full-duplex communications.
+
 Configuration
 ^^^^^^^^^^^^^
 
@@ -45,13 +49,12 @@ Memory-Mapped Interface
 
 .. requirement:: U_REGISTERS_01
 
-   The peripheral shall provide memory-mapped registers described in the table below.
+   The peripheral shall provide the memory-mapped registers described in the table below.
 
 .. requirement:: U_MEMORY_INTERFACE_01
 
    The peripheral memory-mapped registers shall be accessible through a wishbone interface.
 
-  .. _Memory_Mapping_and_Registers:
 .. list-table:: Memory Mapping and Registers
   :header-rows: 1
   :widths: 1 94 1 1 1 1
