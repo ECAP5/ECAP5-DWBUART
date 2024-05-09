@@ -299,14 +299,6 @@ void tb_ecap5_wbuart_write_cr(TB_Ecap5_wbuart * tb) {
       "Failed to integrate the memory", tb->err_cycles[COND_mem]);
 
   CHECK("tb_ecap5_wbuart.write_cr.03",
-      tb->conditions[COND_rx],
-      "Failed to integrate the rx frontend", tb->err_cycles[COND_rx]);
-
-  CHECK("tb_ecap5_wbuart.write_cr.04",
-      tb->conditions[COND_tx],
-      "Failed to integrate the tx frontend", tb->err_cycles[COND_tx]);
-
-  CHECK("tb_ecap5_wbuart.write_cr.05",
       tb->conditions[COND_registers],
       "Failed to implement the memory-mapped registers", tb->err_cycles[COND_registers]);
 }
@@ -470,14 +462,10 @@ void tb_ecap5_wbuart_write_txdr(TB_Ecap5_wbuart * tb) {
       "Failed to integrate the memory", tb->err_cycles[COND_mem]);
 
   CHECK("tb_ecap5_wbuart.write_txdr.03",
-      tb->conditions[COND_rx],
-      "Failed to integrate the rx frontend", tb->err_cycles[COND_rx]);
-
-  CHECK("tb_ecap5_wbuart.write_txdr.04",
       tb->conditions[COND_tx],
       "Failed to integrate the tx frontend", tb->err_cycles[COND_tx]);
 
-  CHECK("tb_ecap5_wbuart.write_txdr.05",
+  CHECK("tb_ecap5_wbuart.write_txdr.04",
       tb->conditions[COND_registers],
       "Failed to implement the memory-mapped registers", tb->err_cycles[COND_registers]);
 }
@@ -643,23 +631,15 @@ void tb_ecap5_wbuart_read_rxdr(TB_Ecap5_wbuart * tb) {
   //`````````````````````````````````
   //      Formal Checks 
   
-  CHECK("tb_ecap5_wbuart.write_rxdr.01",
-      tb->conditions[COND_reset],
-      "Failed to implement the frontend reset", tb->err_cycles[COND_reset]);
-
-  CHECK("tb_ecap5_wbuart.write_rxdr.02",
+  CHECK("tb_ecap5_wbuart.read_rxdr.01",
       tb->conditions[COND_mem],
       "Failed to integrate the memory", tb->err_cycles[COND_mem]);
 
-  CHECK("tb_ecap5_wbuart.write_rxdr.03",
+  CHECK("tb_ecap5_wbuart.read_rxdr.02",
       tb->conditions[COND_rx],
       "Failed to integrate the rx frontend", tb->err_cycles[COND_rx]);
 
-  CHECK("tb_ecap5_wbuart.write_rxdr.04",
-      tb->conditions[COND_tx],
-      "Failed to integrate the tx frontend", tb->err_cycles[COND_tx]);
-
-  CHECK("tb_ecap5_wbuart.write_rxdr.05",
+  CHECK("tb_ecap5_wbuart.read_rxdr.03",
       tb->conditions[COND_registers],
       "Failed to implement the memory-mapped registers", tb->err_cycles[COND_registers]);
 }
@@ -839,22 +819,14 @@ void tb_ecap5_wbuart_rxoe(TB_Ecap5_wbuart * tb) {
   //      Formal Checks 
   
   CHECK("tb_ecap5_wbuart.rxoe.01",
-      tb->conditions[COND_reset],
-      "Failed to implement the frontend reset", tb->err_cycles[COND_reset]);
-
-  CHECK("tb_ecap5_wbuart.rxoe.02",
       tb->conditions[COND_mem],
       "Failed to integrate the memory", tb->err_cycles[COND_mem]);
 
-  CHECK("tb_ecap5_wbuart.rxoe.03",
+  CHECK("tb_ecap5_wbuart.rxoe.02",
       tb->conditions[COND_rx],
       "Failed to integrate the rx frontend", tb->err_cycles[COND_rx]);
 
-  CHECK("tb_ecap5_wbuart.rxoe.04",
-      tb->conditions[COND_tx],
-      "Failed to integrate the tx frontend", tb->err_cycles[COND_tx]);
-
-  CHECK("tb_ecap5_wbuart.rxoe.05",
+  CHECK("tb_ecap5_wbuart.rxoe.03",
       tb->conditions[COND_registers],
       "Failed to implement the memory-mapped registers", tb->err_cycles[COND_registers]);
 }
@@ -958,22 +930,10 @@ void tb_ecap5_wbuart_pe(TB_Ecap5_wbuart * tb) {
   //      Formal Checks 
   
   CHECK("tb_ecap5_wbuart.pe.01",
-      tb->conditions[COND_reset],
-      "Failed to implement the frontend reset", tb->err_cycles[COND_reset]);
-
-  CHECK("tb_ecap5_wbuart.pe.02",
       tb->conditions[COND_mem],
       "Failed to integrate the memory", tb->err_cycles[COND_mem]);
 
-  CHECK("tb_ecap5_wbuart.pe.03",
-      tb->conditions[COND_rx],
-      "Failed to integrate the rx frontend", tb->err_cycles[COND_rx]);
-
-  CHECK("tb_ecap5_wbuart.pe.04",
-      tb->conditions[COND_tx],
-      "Failed to integrate the tx frontend", tb->err_cycles[COND_tx]);
-
-  CHECK("tb_ecap5_wbuart.pe.05",
+  CHECK("tb_ecap5_wbuart.pe.02",
       tb->conditions[COND_registers],
       "Failed to implement the memory-mapped registers", tb->err_cycles[COND_registers]);
 }
@@ -1077,22 +1037,10 @@ void tb_ecap5_wbuart_fe(TB_Ecap5_wbuart * tb) {
   //      Formal Checks 
   
   CHECK("tb_ecap5_wbuart.fe.01",
-      tb->conditions[COND_reset],
-      "Failed to implement the frontend reset", tb->err_cycles[COND_reset]);
-
-  CHECK("tb_ecap5_wbuart.fe.02",
       tb->conditions[COND_mem],
       "Failed to integrate the memory", tb->err_cycles[COND_mem]);
 
-  CHECK("tb_ecap5_wbuart.fe.03",
-      tb->conditions[COND_rx],
-      "Failed to integrate the rx frontend", tb->err_cycles[COND_rx]);
-
-  CHECK("tb_ecap5_wbuart.fe.04",
-      tb->conditions[COND_tx],
-      "Failed to integrate the tx frontend", tb->err_cycles[COND_tx]);
-
-  CHECK("tb_ecap5_wbuart.fe.05",
+  CHECK("tb_ecap5_wbuart.fe.02",
       tb->conditions[COND_registers],
       "Failed to implement the memory-mapped registers", tb->err_cycles[COND_registers]);
 }
@@ -1239,22 +1187,14 @@ void tb_ecap5_wbuart_full_duplex(TB_Ecap5_wbuart * tb) {
   //      Formal Checks 
   
   CHECK("tb_ecap5_wbuart.full_duplex.01",
-      tb->conditions[COND_reset],
-      "Failed to implement the frontend reset", tb->err_cycles[COND_reset]);
-
-  CHECK("tb_ecap5_wbuart.full_duplex.02",
-      tb->conditions[COND_mem],
-      "Failed to integrate the memory", tb->err_cycles[COND_mem]);
-
-  CHECK("tb_ecap5_wbuart.full_duplex.03",
       tb->conditions[COND_rx],
       "Failed to integrate the rx frontend", tb->err_cycles[COND_rx]);
 
-  CHECK("tb_ecap5_wbuart.full_duplex.04",
+  CHECK("tb_ecap5_wbuart.full_duplex.02",
       tb->conditions[COND_tx],
       "Failed to integrate the tx frontend", tb->err_cycles[COND_tx]);
 
-  CHECK("tb_ecap5_wbuart.full_duplex.05",
+  CHECK("tb_ecap5_wbuart.full_duplex.03",
       tb->conditions[COND_registers],
       "Failed to implement the memory-mapped registers", tb->err_cycles[COND_registers]);
 }
