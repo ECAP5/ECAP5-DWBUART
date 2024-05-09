@@ -98,25 +98,84 @@ Functional Requirements
 -----------------------
 
 .. requirement:: F_RESET_01
+   :derivedfrom: U_REGISTERS_01
 
    The registers shall all be reset to 0 when rst_i is asserted.
 
 .. requirement:: F_RESET_02
+   :derivedfrom: U_UART_01
 
    The uart_tx_o signal shall be asserted while rst_i is asserted.
 
 Memory interface
 ^^^^^^^^^^^^^^^^
 
+.. requirement:: F_REGISTERS_01
+   :derivedfrom: U_REGISTERS_01, U_MEMORY_INTERFACE_01, U_BAUD_RATE_01, U_PARITY_BIT_01, U_DATA_SIZE_01, U_STOP_BIT_01
+
+   The following registers shall be implemented and accessible through the wishbone memory interface.
+
+.. list-table:: Memory Mapping and Registers
+  :header-rows: 1
+  :widths: 1 94 1 1 1 1
+  
+  * - Address Offset
+    - Register name
+    - Width (in bits)
+    - Access
+    - Reset value
+    - Section/page
+
+  * - 0000_0000h
+    - Status register (UART_SR)
+    - 32
+    - R
+    - 0000_0000h
+    - :ref:`UART_SR <SPEC_UART_SR>`
+  * - 0000_0004h
+    - Control register (UART_CR)
+    - 32
+    - R/W
+    - 0000_0000h
+    - :ref:`UART_CR <SPEC_UART_CR>`
+  * - 0000_0008h
+    - Receive Data register (UART_RXDR)
+    - 32
+    - R
+    - 0000_0000h
+    - :ref:`UART_RXDR <SPEC_UART_RXDR>`
+  * - 0000_000Ch
+    - Transmit Data register (UART_TXDR)
+    - 32
+    - W
+    - 0000_0000h
+    - :ref:`UART_TXDR <SPEC_UART_TXDR>`
+
+.. _SPEC_UART_SR:
+.. include:: ../spec/content/uart_sr.rst
+
+.. _SPEC_UART_CR:
+.. include:: ../spec/content/uart_cr.rst
+
+.. _SPEC_UART_RXDR:
+.. include:: ../spec/content/uart_rxdr.rst
+
+.. _SPEC_UART_TXDR:
+.. include:: ../spec/content/uart_txdr.rst
+
+
 .. requirement:: F_READ_01
+   :derivedfrom: U_REGISTERS_01
   
    The UART_RXDR register shall be reset after being read and the RXNE field of UART_SR shall be deasserted.
 
 .. requirement:: F_READ_02
+   :derivedfrom: U_REGISTERS_01
   
    The following fields of UART_SR shall be reset after being read : PE, FE and RXOE.
 
 .. requirement:: F_RESET_03
+   :derivedfrom: U_REGISTERS_01
 
    Any change to UART_SR shall cancel both ongoing tranmissions and receptions.
 
@@ -125,32 +184,50 @@ Memory interface
 Serial protocol
 ^^^^^^^^^^^^^^^
 
-.. todo:: Add UART protocol timing diagram
+.. requirement:: F_UART_01
+
+   The following frame format shall be used to encode and decode transit/receive data.
+
+.. image:: ../assets/uart.svg
+
+.. requirement:: F_UART_02
+
+   The number of data bits, parity bits and stop bits shall match the configuration provided in UART_CR.
+
+.. requirement:: F_UART_03
+
+   The time Tbr shall be equal to the product of the CLK_DIV field of UART_CR with the period of clk_i.
 
 Receive
 ^^^^^^^
 
 .. requirement:: F_RECEIVE_01
+   :derivedfrom: U_UART_02
 
    The peripheral shall sample the uart_rx_i signal with a sample interval defined in number of clk_i edges by the field CLK_DIV field of UART_CR.
 
 .. requirement:: F_RECEIVE_02
+   :derivedfrom: U_UART_02
 
    The peripheral shall set the value of the RXD field of UART_RXDR after latching the stop bit.
 
 .. requirement:: F_RECEIVE_03
+   :derivedfrom: U_UART_02
 
    The peripheral shall assert the RXNE field of UART_SR when setting the value of the RXD field.
 
 .. requirement:: F_RECEIVE_ERROR_01
+   :derivedfrom: U_UART_04
 
    The peripheral shall assert the PE field of UART_SR when the result of the xor of all the received bits is not equal to the received parity bit.
 
 .. requirement:: F_RECEIVE_ERROR_02
+   :derivedfrom: U_UART_05
 
    The peripheral shall assert the FE field of UART_SR when the received stop bit is zero instead of one.
 
 .. requirement:: F_RECEIVE_ERROR_03
+   :derivedfrom: U_UART_06
 
    The peripheral shall assert the RXOE field of UART_SR after latching the stop bit while the RXNE field of UART_SR is asserted.
 
@@ -158,10 +235,12 @@ Transmit
 ^^^^^^^^
 
 .. requirement:: F_TRANSMIT_01
+   :derivedfrom: U_UART_01
 
    The peripheral shall transmit the TXD field of UART_TXDR after a write to UART_TXDR when the TXE field of UART_SR is deasserted, with a sample interval defined in number of clk_i edges by the field CLK_DIV field of UART_CR.
 
 .. requirement:: F_TRANSMIT_02
+   :derivedfrom: U_UART_01
 
    The peripheral shall reset the UART_TXDR register after transmitting the stop bits and assert the TXE field of UART_SR.
 
