@@ -166,7 +166,7 @@ always_comb begin : register_access
   mem_read_data_d = 0;
   case(mem_addr[7:2])
     UART_SR:   mem_read_data_d = {27'b0, sr_pe_q, sr_fe_q, sr_rxoe_q, sr_txe_q, sr_rxne_q};
-    UART_CR:   mem_read_data_d = {cr_clk_div_q, 11'b0, cr_s_q, cr_p_q, cr_ds_q, 1'b1};
+    UART_CR:   mem_read_data_d = {cr_clk_div_q, 12'b0, cr_s_q, cr_p_q, cr_ds_q};
     UART_RXDR: mem_read_data_d = {24'b0, rxdr_rxd_q};
     default:   mem_read_data_d = '0;
   endcase
@@ -176,9 +176,9 @@ always_comb begin : register_access
     case(mem_addr[7:2])
       UART_CR: begin
         cr_clk_div_d = mem_write_data[31:16];
-        cr_ds_d = mem_write_data[4];
-        cr_s_d = mem_write_data[3];
-        cr_p_d = mem_write_data[2:1];
+        cr_ds_d = mem_write_data[3];
+        cr_s_d = mem_write_data[2];
+        cr_p_d = mem_write_data[1:0];
       end
       UART_TXDR: txdr_txd_d = mem_write_data[7:0];
       default: begin end
@@ -210,6 +210,7 @@ always_comb begin : register_access
   // Receive error detection
   if(rx_valid) begin
     sr_pe_d = rx_parity_err;
+    sr_fe_d = rx_frame_err;
     sr_rxoe_d = sr_rxne_q | sr_rxoe_q;
   end
 

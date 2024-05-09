@@ -1,15 +1,15 @@
 [*]
 [*] GTKWave Analyzer v3.4.0 (w)1999-2022 BSI
-[*] Sun May  5 14:24:32 2024
+[*] Thu May  9 06:40:26 2024
 [*]
 [dumpfile] "/Users/cchaine/Desktop/Documents/projects/.ecap5.nosync/design/wbuart/build/tests/waves/rx_frontend.vcd"
-[dumpfile_mtime] "Sun May  5 14:24:21 2024"
-[dumpfile_size] 142897
+[dumpfile_mtime] "Thu May  9 06:40:13 2024"
+[dumpfile_size] 144503
 [savefile] "/Users/cchaine/Desktop/Documents/projects/.ecap5.nosync/design/wbuart/config/gtkwave/config/rx_frontend.gtkw"
-[timestart] 1
-[size] 1440 783
+[timestart] 15980
+[size] 2144 901
 [pos] -1 -1
-*-12.303331 16870 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+*-7.000000 16470 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 [markername] AA
 [markername] BB
 [markername] CC
@@ -71,8 +71,12 @@ TOP.tb_rx_frontend.dut.baud_cnt_q[15:0]
 [color] 2
 TOP.tb_rx_frontend.frame_o[10:0]
 [color] 2
-TOP.tb_rx_frontend.parity_o
-[color] 2
 TOP.tb_rx_frontend.output_valid_o
+TOP.tb_rx_frontend.dut.parity_bit
+TOP.tb_rx_frontend.dut.parity_q
+[color] 1
+TOP.tb_rx_frontend.parity_err_o
+[color] 1
+TOP.tb_rx_frontend.frame_err_o
 [pattern_trace] 1
 [pattern_trace] 0

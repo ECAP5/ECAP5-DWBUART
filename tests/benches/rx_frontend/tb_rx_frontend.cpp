@@ -36,7 +36,7 @@ enum CondId {
   COND_state,
   COND_frame,
   COND_valid,
-  COND_parity,
+  COND_errors,
   __CondIdEnd
 };
 
@@ -56,7 +56,8 @@ enum TestcaseId {
   T_VALID_8O2   = 13,
   T_BAUDRATE    = 14,
   T_PARITY_EVEN = 15,
-  T_PARITY_ODD  = 16
+  T_PARITY_ODD  = 16,
+  T_FRAMING     = 17
 };
 
 enum StateId {
@@ -322,6 +323,8 @@ void tb_rx_frontend_valid_frame_7N1(TB_Rx_frontend * tb) {
   
   tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
   tb->check(COND_frame,  (core->frame_o == 0b10100101));
+  tb->check(COND_errors, (core->parity_err_o == 0) &&
+                         (core->frame_err_o == 0));
   tb->check(COND_valid, (core->output_valid_o == 1));
 
   //=================================
@@ -344,6 +347,10 @@ void tb_rx_frontend_valid_frame_7N1(TB_Rx_frontend * tb) {
       "Failed to implement the frame output", tb->err_cycles[COND_frame]);
 
   CHECK("tb_rx_frontend.valid.7N1_03",
+      tb->conditions[COND_errors],
+      "Failed to implement the errors computation", tb->err_cycles[COND_errors]);
+
+  CHECK("tb_rx_frontend.valid.7N1_04",
       tb->conditions[COND_valid],
       "Failed to implement the valid signal", tb->err_cycles[COND_valid]);
 }
@@ -519,6 +526,8 @@ void tb_rx_frontend_valid_frame_7N2(TB_Rx_frontend * tb) {
   
   tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
   tb->check(COND_frame,  (core->frame_o == 0b110100101));
+  tb->check(COND_errors, (core->parity_err_o == 0) &&
+                         (core->frame_err_o == 0));
   tb->check(COND_valid, (core->output_valid_o == 1));
 
   //=================================
@@ -541,6 +550,10 @@ void tb_rx_frontend_valid_frame_7N2(TB_Rx_frontend * tb) {
       "Failed to implement the frame output", tb->err_cycles[COND_frame]);
 
   CHECK("tb_rx_frontend.valid.7N2_03",
+      tb->conditions[COND_errors],
+      "Failed to implement the errors computation", tb->err_cycles[COND_errors]);
+
+  CHECK("tb_rx_frontend.valid.7N2_04",
       tb->conditions[COND_valid],
       "Failed to implement the valid signal", tb->err_cycles[COND_valid]);
 }
@@ -716,6 +729,8 @@ void tb_rx_frontend_valid_frame_7E1(TB_Rx_frontend * tb) {
   
   tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
   tb->check(COND_frame,  (core->frame_o == 0b110100101));
+  tb->check(COND_errors, (core->parity_err_o == 0) &&
+                         (core->frame_err_o == 0));
   tb->check(COND_valid, (core->output_valid_o == 1));
 
   //=================================
@@ -738,6 +753,10 @@ void tb_rx_frontend_valid_frame_7E1(TB_Rx_frontend * tb) {
       "Failed to implement the frame output", tb->err_cycles[COND_frame]);
 
   CHECK("tb_rx_frontend.valid.7E1_03",
+      tb->conditions[COND_errors],
+      "Failed to implement the errors computation", tb->err_cycles[COND_errors]);
+
+  CHECK("tb_rx_frontend.valid.7E1_04",
       tb->conditions[COND_valid],
       "Failed to implement the valid signal", tb->err_cycles[COND_valid]);
 }
@@ -923,6 +942,8 @@ void tb_rx_frontend_valid_frame_7E2(TB_Rx_frontend * tb) {
   
   tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
   tb->check(COND_frame,  (core->frame_o == 0b1110100101));
+  tb->check(COND_errors, (core->parity_err_o == 0) &&
+                         (core->frame_err_o == 0));
   tb->check(COND_valid, (core->output_valid_o == 1));
 
   //=================================
@@ -945,6 +966,10 @@ void tb_rx_frontend_valid_frame_7E2(TB_Rx_frontend * tb) {
       "Failed to implement the frame output", tb->err_cycles[COND_frame]);
 
   CHECK("tb_rx_frontend.valid.7E2_03",
+      tb->conditions[COND_errors],
+      "Failed to implement the errors computation", tb->err_cycles[COND_errors]);
+
+  CHECK("tb_rx_frontend.valid.7E2_04",
       tb->conditions[COND_valid],
       "Failed to implement the valid signal", tb->err_cycles[COND_valid]);
 }
@@ -1120,6 +1145,8 @@ void tb_rx_frontend_valid_frame_7O1(TB_Rx_frontend * tb) {
   
   tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
   tb->check(COND_frame,  (core->frame_o == 0b100100101));
+  tb->check(COND_errors, (core->parity_err_o == 0) &&
+                         (core->frame_err_o == 0));
   tb->check(COND_valid, (core->output_valid_o == 1));
 
   //=================================
@@ -1142,6 +1169,10 @@ void tb_rx_frontend_valid_frame_7O1(TB_Rx_frontend * tb) {
       "Failed to implement the frame output", tb->err_cycles[COND_frame]);
 
   CHECK("tb_rx_frontend.valid.7O1_03",
+      tb->conditions[COND_errors],
+      "Failed to implement the errors computation", tb->err_cycles[COND_errors]);
+
+  CHECK("tb_rx_frontend.valid.7O1_04",
       tb->conditions[COND_valid],
       "Failed to implement the valid signal", tb->err_cycles[COND_valid]);
 }
@@ -1327,6 +1358,8 @@ void tb_rx_frontend_valid_frame_7O2(TB_Rx_frontend * tb) {
   
   tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
   tb->check(COND_frame,  (core->frame_o == 0b1100100101));
+  tb->check(COND_errors, (core->parity_err_o == 0) &&
+                         (core->frame_err_o == 0));
   tb->check(COND_valid, (core->output_valid_o == 1));
 
   //=================================
@@ -1349,6 +1382,10 @@ void tb_rx_frontend_valid_frame_7O2(TB_Rx_frontend * tb) {
       "Failed to implement the frame output", tb->err_cycles[COND_frame]);
 
   CHECK("tb_rx_frontend.valid.7O2_03",
+      tb->conditions[COND_errors],
+      "Failed to implement the errors computation", tb->err_cycles[COND_errors]);
+
+  CHECK("tb_rx_frontend.valid.7O2_04",
       tb->conditions[COND_valid],
       "Failed to implement the valid signal", tb->err_cycles[COND_valid]);
 }
@@ -1524,6 +1561,8 @@ void tb_rx_frontend_valid_frame_8N1(TB_Rx_frontend * tb) {
   
   tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
   tb->check(COND_frame,  (core->frame_o == 0b110100101));
+  tb->check(COND_errors, (core->parity_err_o == 0) &&
+                         (core->frame_err_o == 0));
   tb->check(COND_valid, (core->output_valid_o == 1));
 
   //=================================
@@ -1546,6 +1585,10 @@ void tb_rx_frontend_valid_frame_8N1(TB_Rx_frontend * tb) {
       "Failed to implement the frame output", tb->err_cycles[COND_frame]);
 
   CHECK("tb_rx_frontend.valid.8N1_03",
+      tb->conditions[COND_errors],
+      "Failed to implement the errors computation", tb->err_cycles[COND_errors]);
+
+  CHECK("tb_rx_frontend.valid.8N1_04",
       tb->conditions[COND_valid],
       "Failed to implement the valid signal", tb->err_cycles[COND_valid]);
 }
@@ -1731,6 +1774,8 @@ void tb_rx_frontend_valid_frame_8N2(TB_Rx_frontend * tb) {
   
   tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
   tb->check(COND_frame,  (core->frame_o == 0b1110100101));
+  tb->check(COND_errors, (core->parity_err_o == 0) &&
+                         (core->frame_err_o == 0));
   tb->check(COND_valid, (core->output_valid_o == 1));
 
   //=================================
@@ -1753,6 +1798,10 @@ void tb_rx_frontend_valid_frame_8N2(TB_Rx_frontend * tb) {
       "Failed to implement the frame output", tb->err_cycles[COND_frame]);
 
   CHECK("tb_rx_frontend.valid.8N2_03",
+      tb->conditions[COND_errors],
+      "Failed to implement the errors computation", tb->err_cycles[COND_errors]);
+
+  CHECK("tb_rx_frontend.valid.8N2_04",
       tb->conditions[COND_valid],
       "Failed to implement the valid signal", tb->err_cycles[COND_valid]);
 }
@@ -1938,6 +1987,8 @@ void tb_rx_frontend_valid_frame_8E1(TB_Rx_frontend * tb) {
   
   tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
   tb->check(COND_frame,  (core->frame_o == 0b1010100101));
+  tb->check(COND_errors, (core->parity_err_o == 0) &&
+                         (core->frame_err_o == 0));
   tb->check(COND_valid, (core->output_valid_o == 1));
 
   //=================================
@@ -1960,6 +2011,10 @@ void tb_rx_frontend_valid_frame_8E1(TB_Rx_frontend * tb) {
       "Failed to implement the frame output", tb->err_cycles[COND_frame]);
 
   CHECK("tb_rx_frontend.valid.8E1_03",
+      tb->conditions[COND_errors],
+      "Failed to implement the errors computation", tb->err_cycles[COND_errors]);
+
+  CHECK("tb_rx_frontend.valid.8E1_04",
       tb->conditions[COND_valid],
       "Failed to implement the valid signal", tb->err_cycles[COND_valid]);
 }
@@ -2155,6 +2210,8 @@ void tb_rx_frontend_valid_frame_8E2(TB_Rx_frontend * tb) {
   
   tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
   tb->check(COND_frame,  (core->frame_o == 0b11010100101));
+  tb->check(COND_errors, (core->parity_err_o == 0) &&
+                         (core->frame_err_o == 0));
   tb->check(COND_valid, (core->output_valid_o == 1));
 
   //=================================
@@ -2177,6 +2234,10 @@ void tb_rx_frontend_valid_frame_8E2(TB_Rx_frontend * tb) {
       "Failed to implement the frame output", tb->err_cycles[COND_frame]);
 
   CHECK("tb_rx_frontend.valid.8E2_03",
+      tb->conditions[COND_errors],
+      "Failed to implement the errors computation", tb->err_cycles[COND_errors]);
+
+  CHECK("tb_rx_frontend.valid.8E2_04",
       tb->conditions[COND_valid],
       "Failed to implement the valid signal", tb->err_cycles[COND_valid]);
 }
@@ -2362,6 +2423,8 @@ void tb_rx_frontend_valid_frame_8O1(TB_Rx_frontend * tb) {
   
   tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
   tb->check(COND_frame,  (core->frame_o == 0b1110100101));
+  tb->check(COND_errors, (core->parity_err_o == 0) &&
+                         (core->frame_err_o == 0));
   tb->check(COND_valid, (core->output_valid_o == 1));
 
   //=================================
@@ -2384,6 +2447,10 @@ void tb_rx_frontend_valid_frame_8O1(TB_Rx_frontend * tb) {
       "Failed to implement the frame output", tb->err_cycles[COND_frame]);
 
   CHECK("tb_rx_frontend.valid.8O1_03",
+      tb->conditions[COND_errors],
+      "Failed to implement the errors computation", tb->err_cycles[COND_errors]);
+
+  CHECK("tb_rx_frontend.valid.8O1_04",
       tb->conditions[COND_valid],
       "Failed to implement the valid signal", tb->err_cycles[COND_valid]);
 }
@@ -2579,6 +2646,8 @@ void tb_rx_frontend_valid_frame_8O2(TB_Rx_frontend * tb) {
   
   tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
   tb->check(COND_frame,  (core->frame_o == 0b11110100101));
+  tb->check(COND_errors, (core->parity_err_o == 0) &&
+                         (core->frame_err_o == 0));
   tb->check(COND_valid, (core->output_valid_o == 1));
 
   //=================================
@@ -2601,6 +2670,10 @@ void tb_rx_frontend_valid_frame_8O2(TB_Rx_frontend * tb) {
       "Failed to implement the frame output", tb->err_cycles[COND_frame]);
 
   CHECK("tb_rx_frontend.valid.8O2_03",
+      tb->conditions[COND_errors],
+      "Failed to implement the errors computation", tb->err_cycles[COND_errors]);
+
+  CHECK("tb_rx_frontend.valid.8O2_04",
       tb->conditions[COND_valid],
       "Failed to implement the valid signal", tb->err_cycles[COND_valid]);
 }
@@ -2773,6 +2846,8 @@ void tb_rx_frontend_baudrate(TB_Rx_frontend * tb) {
   
   tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
   tb->check(COND_frame,  (core->frame_o == 0b10100101));
+  tb->check(COND_errors, (core->parity_err_o == 0) &&
+                         (core->frame_err_o == 0));
   tb->check(COND_valid, (core->output_valid_o == 1));
 
   //=================================
@@ -2798,15 +2873,19 @@ void tb_rx_frontend_baudrate(TB_Rx_frontend * tb) {
   //`````````````````````````````````
   //      Formal Checks 
   
-  CHECK("tb_rx_frontend.valid.7N1_01",
+  CHECK("tb_rx_frontend.baudrate.01",
       tb->conditions[COND_state],
       "Failed to implement the state machine", tb->err_cycles[COND_state]);
 
-  CHECK("tb_rx_frontend.valid.7N1_02",
+  CHECK("tb_rx_frontend.baudrate.02",
       tb->conditions[COND_frame],
       "Failed to implement the frame output", tb->err_cycles[COND_frame]);
 
-  CHECK("tb_rx_frontend.valid.7N1_03",
+  CHECK("tb_rx_frontend.baudrate.03",
+      tb->conditions[COND_errors],
+      "Failed to implement the errors computation", tb->err_cycles[COND_errors]);
+
+  CHECK("tb_rx_frontend.baudrate.04",
       tb->conditions[COND_valid],
       "Failed to implement the valid signal", tb->err_cycles[COND_valid]);
 }
@@ -2941,7 +3020,7 @@ void tb_rx_frontend_parity_even(TB_Rx_frontend * tb) {
   //`````````````````````````````````
   //      Checks 
   
-  tb->check(COND_parity, (core->parity_err_o == 0));
+  tb->check(COND_errors, (core->parity_err_o == 0));
   tb->check(COND_valid,  (core->output_valid_o == 1));
 
   //`````````````````````````````````
@@ -3052,15 +3131,15 @@ void tb_rx_frontend_parity_even(TB_Rx_frontend * tb) {
   //`````````````````````````````````
   //      Checks 
   
-  tb->check(COND_parity, (core->parity_err_o == 0));
+  tb->check(COND_errors, (core->parity_err_o == 0));
   tb->check(COND_valid,  (core->output_valid_o == 1));
 
   //`````````````````````````````````
   //      Formal Checks 
   
   CHECK("tb_rx_frontend.parity.EVEN_01",
-      tb->conditions[COND_parity],
-      "Failed to implement the parity computation", tb->err_cycles[COND_parity]);
+      tb->conditions[COND_errors],
+      "Failed to implement the errors computation", tb->err_cycles[COND_errors]);
 
   CHECK("tb_rx_frontend.parity.EVEN_02",
       tb->conditions[COND_valid],
@@ -3197,7 +3276,7 @@ void tb_rx_frontend_parity_odd(TB_Rx_frontend * tb) {
   //`````````````````````````````````
   //      Checks 
   
-  tb->check(COND_parity, (core->parity_err_o == 0));
+  tb->check(COND_errors, (core->parity_err_o == 0));
   tb->check(COND_valid,  (core->output_valid_o == 1));
 
   //`````````````````````````````````
@@ -3308,17 +3387,203 @@ void tb_rx_frontend_parity_odd(TB_Rx_frontend * tb) {
   //`````````````````````````````````
   //      Checks 
   
-  tb->check(COND_parity, (core->parity_err_o == 1));
+  tb->check(COND_errors, (core->parity_err_o == 1));
   tb->check(COND_valid,  (core->output_valid_o == 1));
 
   //`````````````````````````````````
   //      Formal Checks 
   
   CHECK("tb_rx_frontend.parity.ODD_01",
-      tb->conditions[COND_parity],
-      "Failed to implement the parity computation", tb->err_cycles[COND_parity]);
+      tb->conditions[COND_errors],
+      "Failed to implement the errors computation", tb->err_cycles[COND_errors]);
 
   CHECK("tb_rx_frontend.parity.ODD_02",
+      tb->conditions[COND_valid],
+      "Failed to implement the valid signal", tb->err_cycles[COND_valid]);
+}
+
+void tb_rx_frontend_framing(TB_Rx_frontend * tb) {
+  Vtb_rx_frontend * core = tb->core;
+  core->testcase = T_FRAMING;
+
+  //=================================
+  //      Tick (1)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (2-3)
+  
+  tb->n_tick(2);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_IDLE));
+  tb->check(COND_valid, (core->output_valid_o == 0));
+
+  //=================================
+  //      Tick (4-5)
+  
+  tb->n_tick(2);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_START));
+  tb->check(COND_valid, (core->output_valid_o == 0));
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (6-7)
+  
+  tb->n_tick(2);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
+  tb->check(COND_valid, (core->output_valid_o == 0));
+
+  //=================================
+  //      Tick (8-9)
+  
+  tb->n_tick(2);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (10-13)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (14-17)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (18-21)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (22-25)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (26-29)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (30-33)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 1;
+
+  //=================================
+  //      Tick (34-37)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (38-41)
+  
+  tb->n_tick(4);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
+  tb->check(COND_valid, (core->output_valid_o == 0));
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->uart_rx_i = 0;
+
+  //=================================
+  //      Tick (42)
+  
+  tb->n_tick(1);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_errors, (core->frame_err_o == 1));
+
+  //=================================
+  //      Tick (43-45)
+  
+  tb->n_tick(3);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  //`````````````````````````````````
+  //      Formal Checks 
+  
+  CHECK("tb_rx_frontend.framing.01",
+      tb->conditions[COND_state],
+      "Failed to implement the state machine", tb->err_cycles[COND_state]);
+
+  CHECK("tb_rx_frontend.framing.02",
+      tb->conditions[COND_frame],
+      "Failed to implement the frame output", tb->err_cycles[COND_frame]);
+
+  CHECK("tb_rx_frontend.framing.03",
+      tb->conditions[COND_errors],
+      "Failed to implement the errors computation", tb->err_cycles[COND_errors]);
+
+  CHECK("tb_rx_frontend.framing.04",
       tb->conditions[COND_valid],
       "Failed to implement the valid signal", tb->err_cycles[COND_valid]);
 }
@@ -3356,6 +3621,7 @@ int main(int argc, char ** argv, char ** env) {
 
   tb_rx_frontend_parity_even(tb);
   tb_rx_frontend_parity_odd(tb);
+  tb_rx_frontend_framing(tb);
 
   /************************************************************/
 

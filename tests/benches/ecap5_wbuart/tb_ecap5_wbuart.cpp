@@ -42,14 +42,16 @@ enum CondId {
 };
 
 enum TestcaseId {
-  T_IDLE        = 1,
-  T_WRITE_CR    = 2,
-  T_WRITE_TXDR  = 3,
-  T_READ_RXDR   = 4,
-  T_RXOE        = 5,
-  T_FE          = 6,
-  T_PE          = 7,
-  T_DISABLE     = 8
+  T_IDLE                  = 1,
+  T_WRITE_CR              = 2,
+  T_WRITE_TXDR            = 3,
+  T_READ_RXDR             = 4,
+  T_RXOE                  = 5,
+  T_FE                    = 6,
+  T_PE                    = 7,
+  T_WRITE_CR_MID_RX_FRAME = 8,
+  T_WRITE_CR_MID_TX_FRAME = 9,
+  T_FULL_DUPLEX           = 10
 };
 
 enum StateId {
@@ -117,9 +119,9 @@ public:
   uint32_t uart_cr() {
     uint32_t reg = 0;
     reg |= core->tb_ecap5_wbuart->dut->cr_clk_div_q << 16;
-    reg |= core->tb_ecap5_wbuart->dut->cr_ds_q << 4;
-    reg |= core->tb_ecap5_wbuart->dut->cr_s_q << 3;
-    reg |= core->tb_ecap5_wbuart->dut->cr_p_q << 1;
+    reg |= core->tb_ecap5_wbuart->dut->cr_ds_q << 3;
+    reg |= core->tb_ecap5_wbuart->dut->cr_s_q << 2;
+    reg |= core->tb_ecap5_wbuart->dut->cr_p_q;
     return reg;
   }
 
@@ -131,7 +133,7 @@ public:
     return core->tb_ecap5_wbuart->dut->txdr_txd_q;
   }
 
-  void send(uint32_t data, uint32_t clk_div, uint8_t ds, uint8_t p, uint8_t s, uint8_t inject_pe) {
+  void send(uint32_t data, uint32_t clk_div, uint8_t ds, uint8_t p, uint8_t s, uint8_t inject_pe, uint8_t inject_fe) {
     // Start bit
     this->core->uart_rx_i = 0;
     this->n_tick(clk_div);
@@ -151,7 +153,7 @@ public:
     // Stop bits
     uint8_t num_stop_bits = s ? 2 : 1;
     for(int i = 0; i < num_stop_bits; i++) {
-      this->core->uart_rx_i = 1;
+      this->core->uart_rx_i = !inject_fe;
       this->n_tick(clk_div);
     }
   }
@@ -269,7 +271,7 @@ void tb_ecap5_wbuart_write_cr(TB_Ecap5_wbuart * tb) {
   
   tb->check(COND_reset,     (core->tb_ecap5_wbuart->dut->frontend_rst == 1));
   tb->check(COND_mem,       (core->wb_ack_o == 1));
-  tb->check(COND_registers, (tb->uart_cr() == 0xA5FA0004));
+  tb->check(COND_registers, (tb->uart_cr() == 0xA5FA0005));
 
   //`````````````````````````````````
   //      Set inputs
@@ -328,7 +330,7 @@ void tb_ecap5_wbuart_write_txdr(TB_Ecap5_wbuart * tb) {
   //`````````````````````````````````
   //      Set inputs
 
-  uint32_t cr = (4 << 16) | (1 << 4) | (1 << 1) | 1;
+  uint32_t cr = (4 << 16) | (1 << 3) | 1;
   tb->write(0x4, cr);
 
   //=================================
@@ -494,7 +496,7 @@ void tb_ecap5_wbuart_read_rxdr(TB_Ecap5_wbuart * tb) {
   //`````````````````````````````````
   //      Set inputs
 
-  uint32_t cr = (4 << 16) | (1 << 4) | (1 << 1) | 1;
+  uint32_t cr = (4 << 16) | (1 << 3) | 1;
   tb->write(0x4, cr);
 
   //=================================
@@ -676,7 +678,7 @@ void tb_ecap5_wbuart_rxoe(TB_Ecap5_wbuart * tb) {
   //`````````````````````````````````
   //      Set inputs
 
-  uint32_t cr = (4 << 16) | (1 << 4) | (1 << 1) | 1;
+  uint32_t cr = (4 << 16) | (1 << 3) | 1;
   tb->write(0x4, cr);
 
   //=================================
@@ -708,7 +710,7 @@ void tb_ecap5_wbuart_rxoe(TB_Ecap5_wbuart * tb) {
   //=================================
   //      Tick (4-47)
   
-  tb->send(0x5F, 4, 1, 1, 0, 0);
+  tb->send(0x5F, 4, 1, 1, 0, 0, 0);
 
   //=================================
   //      Tick (48)
@@ -734,7 +736,7 @@ void tb_ecap5_wbuart_rxoe(TB_Ecap5_wbuart * tb) {
   //=================================
   //      Tick (50-93)
   
-  tb->send(0xF5, 4, 1, 1, 0, 0);
+  tb->send(0xF5, 4, 1, 1, 0, 0, 0);
 
   //=================================
   //      Tick (94)
@@ -871,7 +873,7 @@ void tb_ecap5_wbuart_pe(TB_Ecap5_wbuart * tb) {
   //`````````````````````````````````
   //      Set inputs
 
-  uint32_t cr = (4 << 16) | (1 << 4) | (1 << 1) | 1;
+  uint32_t cr = (4 << 16) | (1 << 3) | 1;
   tb->write(0x4, cr);
 
   //=================================
@@ -903,7 +905,7 @@ void tb_ecap5_wbuart_pe(TB_Ecap5_wbuart * tb) {
   //=================================
   //      Tick (4-47)
   
-  tb->send(0x5F, 4, 1, 1, 0, 1);
+  tb->send(0x5F, 4, 1, 1, 0, 1, 0);
 
   //=================================
   //      Tick (48)
@@ -982,18 +984,140 @@ void tb_ecap5_wbuart_fe(TB_Ecap5_wbuart * tb) {
   Vtb_ecap5_wbuart * core = tb->core;
   core->testcase = T_FE;
 
+  //=================================
+  //      Tick (0)
+  
   tb->reset();
+
+  //`````````````````````````````````
+  //      Set inputs
+
+  uint32_t cr = (4 << 16) | (1 << 3);
+  tb->write(0x4, cr);
+
+  //=================================
+  //      Tick (1)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  tb->_nop();
+  core->wb_cyc_i = 1;
+
+  //=================================
+  //      Tick (2)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  tb->_nop();
+
+  //=================================
+  //      Tick (3)
+  
+  tb->tick();
+
+  //=================================
+  //      Tick (4-47)
+  
+  tb->send(0x5F, 4, 1, 0, 0, 0, 1);
+
+  //=================================
+  //      Tick (48)
+  
+  tb->n_tick(2);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_registers, (tb->uart_sr() >> 3) & 0x1);
+
+  //`````````````````````````````````
+  //      Set inputs
+
+  tb->read(0x0);
+
+  uint32_t sr = tb->uart_sr();
+
+  //=================================
+  //      Tick (49)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_mem, (core->tb_ecap5_wbuart->dut->mem_read_data_q == sr));
+  tb->check(COND_registers, (((tb->uart_sr() >> 3) & 0x1) == 0));
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  tb->_nop();
+  core->wb_cyc_i = 1;
+
+  //=================================
+  //      Tick (50)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  tb->_nop();
+
+  //=================================
+  //      Tick (51)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Formal Checks 
+  
+  CHECK("tb_ecap5_wbuart.fe.01",
+      tb->conditions[COND_reset],
+      "Failed to implement the frontend reset", tb->err_cycles[COND_reset]);
+
+  CHECK("tb_ecap5_wbuart.fe.02",
+      tb->conditions[COND_mem],
+      "Failed to integrate the memory", tb->err_cycles[COND_mem]);
+
+  CHECK("tb_ecap5_wbuart.fe.03",
+      tb->conditions[COND_rx],
+      "Failed to integrate the rx frontend", tb->err_cycles[COND_rx]);
+
+  CHECK("tb_ecap5_wbuart.fe.04",
+      tb->conditions[COND_tx],
+      "Failed to integrate the tx frontend", tb->err_cycles[COND_tx]);
+
+  CHECK("tb_ecap5_wbuart.fe.05",
+      tb->conditions[COND_registers],
+      "Failed to implement the memory-mapped registers", tb->err_cycles[COND_registers]);
 }
 
-void tb_ecap5_wbuart_disable(TB_Ecap5_wbuart * tb) {
+void tb_ecap5_wbuart_write_cr_mid_rx_frame(TB_Ecap5_wbuart * tb) {
   Vtb_ecap5_wbuart * core = tb->core;
-  core->testcase = T_DISABLE;
+  core->testcase = T_WRITE_CR_MID_RX_FRAME;
 
   tb->reset();
 }
 
-void tb_ecap5_wbuart_write_cr_mid_packet(TB_Ecap5_wbuart * tb) {
+void tb_ecap5_wbuart_write_cr_mid_tx_frame(TB_Ecap5_wbuart * tb) {
+  Vtb_ecap5_wbuart * core = tb->core;
+  core->testcase = T_WRITE_CR_MID_TX_FRAME;
 
+  tb->reset();
+}
+
+void tb_ecap5_wbuart_full_duplex(TB_Ecap5_wbuart * tb) {
+  Vtb_ecap5_wbuart * core = tb->core;
+  core->testcase = T_FULL_DUPLEX;
+
+  tb->reset();
 }
 
 int main(int argc, char ** argv, char ** env) {
@@ -1020,7 +1144,10 @@ int main(int argc, char ** argv, char ** env) {
   tb_ecap5_wbuart_fe(tb);
   tb_ecap5_wbuart_pe(tb);
 
-  tb_ecap5_wbuart_disable(tb);
+  tb_ecap5_wbuart_write_cr_mid_rx_frame(tb);
+  tb_ecap5_wbuart_write_cr_mid_tx_frame(tb);
+
+  tb_ecap5_wbuart_full_duplex(tb);
 
   /************************************************************/
 

@@ -229,6 +229,7 @@ assign frame_o = frame_shifted;
 //  - The computed parity is different than the received parity bit
 //  - Parity detection is enabled
 assign parity_err_o = (parity_q ^ parity_bit) & (cr_p_i[0] | cr_p_i[1]);
+assign frame_err_o = (frame_q[MAX_FRAME_SIZE-1] == 0);
 assign output_valid_o = frame_bit_cnt_done;
 
 endmodule // rx_frontend
