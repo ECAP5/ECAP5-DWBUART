@@ -1,5 +1,5 @@
 Control register (UART_CR)
-``````````````````````````
+""""""""""""""""""""""""""
 
 UART_CR contains the control for selecting the UART baudrate, parity, size and stop bits.
 
