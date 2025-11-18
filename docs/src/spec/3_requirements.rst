@@ -1,6 +1,8 @@
 Requirements
 ============
 
+.. |tab|   unicode:: U+00A0 .. NO-BREAK SPACE
+
 External Interface Requirements
 -------------------------------
 
@@ -109,6 +111,65 @@ Functional Requirements
 
 Memory interface
 ^^^^^^^^^^^^^^^^
+
+Wishbone protocol
+`````````````````
+
+The following requirements are extracted from the Wishbone specification.
+
+.. requirement:: F_WISHBONE_DATASHEET_01
+  :derivedfrom: U_MEMORY_INTERFACE_01
+
+  The memory interface shall comply with the Wishbone Datasheet provided in section 2.1.
+
+.. requirement:: F_WISHBONE_RESET_01
+  :derivedfrom: U_MEMORY_INTERFACE_01
+
+  The memory interface shall initialize itself at the rising edge of clk_i following the assertion of rst_i.
+
+.. requirement:: F_WISHBONE_RESET_02
+  :derivedfrom: U_MEMORY_INTERFACE_01
+
+  The memory interface shall stay in the initialization state until the rising edge of clk_i following the deassertion of rst_i.
+
+.. requirement:: F_WISHBONE_TRANSFER_CYCLE_01
+  :derivedfrom: U_MEMORY_INTERFACE_01
+
+  The memory interface shall only respond to transfer cycles when wb_cyc_i is asserted.
+
+.. requirement:: F_WISHBONE_HANDSHAKE_01
+  :derivedfrom: U_MEMORY_INTERFACE_01
+
+  The memory interface shall assert the wb_ack_o signal in response to the logical AND of wb_cyc_i and wb_stb_i.
+
+.. requirement:: F_WISHBONE_READ_CYCLE_01
+  :derivedfrom: U_MEMORY_INTERFACE_01
+
+  The memory interface shall conform to the READ cycle detailed in the figure below.
+
+.. figure:: ../assets/wishbone-read.svg
+   :align: center
+   
+   Timing diagram of the wishbone read cycle
+
+.. requirement:: F_WISHBONE_WRITE_CYCLE_01
+  :derivedfrom: U_MEMORY_INTERFACE_01
+
+  The memory interface shall conform to the WRITE cycle detailed in figure below.
+
+.. figure:: ../assets/wishbone-write.svg
+   :align: center
+   
+   Timing diagram of the wishbone write cycle
+
+.. requirement:: F_WISHBONE_TIMING_01
+  :rationale: As long as the memory interface is designed within the clock domain of clk_i, the requirement will be satisfied by using the place and route tool.
+  :derivedfrom: U_MEMORY_INTERFACE_01
+
+  The clock input clk_i shall coordinate all activites for the internal logic within the memory interface. All output signals of the memory interface shall be registered at the rising edge of clk_i. All input signals of the memory interface shall be stable before the rising edge of clk_i.
+
+Memory-mapped registers
+```````````````````````
 
 .. requirement:: F_REGISTERS_01
    :derivedfrom: U_REGISTERS_01, U_MEMORY_INTERFACE_01, U_BAUD_RATE_01, U_PARITY_BIT_01, U_DATA_SIZE_01, U_STOP_BIT_01
@@ -243,6 +304,7 @@ Transmit
    :derivedfrom: U_UART_01
 
    The peripheral shall transmit the TXD field of UART_TXDR after a write to UART_TXDR when the TXE field of UART_SR is deasserted, with a sample interval defined in number of clk_i edges by the field CLK_DIV field of UART_CR.
+
 
 Non-functional Requirements
 ---------------------------
