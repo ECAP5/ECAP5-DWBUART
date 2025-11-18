@@ -198,16 +198,17 @@ jobs:
       uses: exuanbo/actions-deploy-gist@v1.1.4
       with:
         token: ${{ secrets.GIST_SECRET }}
-        gist_id: d719fab2aa54dae4252f2acadd03cb33
+        gist_id: f525ce32a8951303b0892d98a54b8d66
         file_path: build/test-result-badge.json
         file_type: text 
+
 
     - name: Upload traceability result badge
       if: ${{ always() && github.ref == 'refs/heads/main' }}
       uses: exuanbo/actions-deploy-gist@v1.1.4
       with:
         token: ${{ secrets.GIST_SECRET }}
-        gist_id: d719fab2aa54dae4252f2acadd03cb33
+        gist_id: f525ce32a8951303b0892d98a54b8d66
         file_path: build/traceability-result-badge.json
         file_type: text 
 
