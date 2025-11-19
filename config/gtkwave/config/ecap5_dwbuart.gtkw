@@ -1,0 +1,121 @@
+[*]
+[*] GTKWave Analyzer v3.4.0 (w)1999-2022 BSI
+[*] Wed May  8 07:33:08 2024
+[*]
+[dumpfile] "/Users/cchaine/Desktop/Documents/projects/.ecap5.nosync/design/wbuart/build/tests/waves/ecap5_dwbuart.vcd"
+[dumpfile_mtime] "Wed May  8 07:26:31 2024"
+[dumpfile_size] 23128
+[savefile] "/Users/cchaine/Desktop/Documents/projects/.ecap5.nosync/design/wbuart/config/gtkwave/config/ecap5_dwbuart.gtkw"
+[timestart] 1
+[size] 1440 783
+[pos] -1 -1
+*-6.069452 123 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+[markername] AA
+[markername] BB
+[markername] CC
+[markername] DD
+[markername] EE
+[markername] FF
+[markername] GG
+[markername] HH
+[markername] II
+[markername] JJ
+[markername] KK
+[markername] LL
+[markername] MM
+[markername] NN
+[markername] OO
+[markername] PP
+[markername] QQ
+[markername] RR
+[markername] SS
+[markername] TT
+[markername] UU
+[markername] VV
+[markername] WW
+[markername] XX
+[markername] YY
+[markername] ZZ
+[treeopen] TOP.
+[treeopen] TOP.tb_ecap5_dwbuart.
+[treeopen] TOP.tb_ecap5_dwbuart.dut.
+[sst_width] 253
+[signals_width] 193
+[sst_expanded] 1
+[sst_vpaned_height] 386
+@2024
+[color] 1
+^1 /Users/cchaine/Desktop/Documents/projects/.ecap5.nosync/design/wbuart/config/gtkwave/filters/ecap5_dwbuart_testcase_filter.gtkw
+TOP.tb_ecap5_dwbuart.testcase[31:0]
+@28
+TOP.tb_ecap5_dwbuart.clk_i
+TOP.tb_ecap5_dwbuart.rst_i
+@800200
+-Wishbone
+@22
+[color] 2
+TOP.tb_ecap5_dwbuart.wb_adr_i[31:0]
+[color] 2
+TOP.tb_ecap5_dwbuart.wb_dat_i[31:0]
+[color] 2
+TOP.tb_ecap5_dwbuart.wb_dat_o[31:0]
+@28
+[color] 2
+TOP.tb_ecap5_dwbuart.wb_we_i
+@22
+[color] 2
+TOP.tb_ecap5_dwbuart.wb_sel_i[3:0]
+@28
+[color] 2
+TOP.tb_ecap5_dwbuart.wb_stb_i
+[color] 2
+TOP.tb_ecap5_dwbuart.wb_ack_o
+[color] 2
+TOP.tb_ecap5_dwbuart.wb_cyc_i
+[color] 2
+TOP.tb_ecap5_dwbuart.wb_stall_o
+@1000200
+-Wishbone
+@28
+[color] 7
+TOP.tb_ecap5_dwbuart.uart_rx_i
+[color] 7
+TOP.tb_ecap5_dwbuart.uart_tx_o
+@800200
+-Registers
+@c00201
+-CR
+@22
+TOP.tb_ecap5_dwbuart.dut.cr_clk_div_q[15:0]
+@28
+TOP.tb_ecap5_dwbuart.dut.cr_ds_q
+TOP.tb_ecap5_dwbuart.dut.cr_p_q[1:0]
+TOP.tb_ecap5_dwbuart.dut.cr_s_q
+@1401201
+-CR
+@c00200
+-SR
+@28
+TOP.tb_ecap5_dwbuart.dut.sr_fe_q
+TOP.tb_ecap5_dwbuart.dut.sr_pe_q
+TOP.tb_ecap5_dwbuart.dut.sr_rxne_q
+TOP.tb_ecap5_dwbuart.dut.sr_rxoe_q
+TOP.tb_ecap5_dwbuart.dut.sr_txe_q
+@1401200
+-SR
+@22
+TOP.tb_ecap5_dwbuart.dut.txdr_txd_q[7:0]
+TOP.tb_ecap5_dwbuart.dut.rxdr_rxd_q[7:0]
+@1000200
+-Registers
+@28
+TOP.tb_ecap5_dwbuart.dut.frontend_rst
+TOP.tb_ecap5_dwbuart.dut.tx_transmit_q
+TOP.tb_ecap5_dwbuart.dut.tx_done
+TOP.tb_ecap5_dwbuart.dut.rx_valid
+@22
+TOP.tb_ecap5_dwbuart.dut.rx_frame[10:0]
+@28
+TOP.tb_ecap5_dwbuart.dut.rx_parity
+[pattern_trace] 1
+[pattern_trace] 0

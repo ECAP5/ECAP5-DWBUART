@@ -7,12 +7,12 @@
 <div align="center">
     <img src="docs/src/assets/logo-rounded.svg" alt="Logo" width="80" height="80">
 
-  <h3 align="center">ECAP5-DBWBUART</h3>
+  <h3 align="center">ECAP5-DWBUART</h3>
 
   <p align="center">
     UART peripheral implementation accessible through a Wishbone bus.
     <br />
-    <a href="https://ecap5.github.io/ECAP5-DBWBUART/"><strong>Explore the docs »</strong></a>
+    <a href="https://ecap5.github.io/ECAP5-DWBUART/"><strong>Explore the docs »</strong></a>
     <br />
   </p>
 </div>
