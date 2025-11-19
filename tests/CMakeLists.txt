@@ -87,7 +87,7 @@ endmacro()
 add_testbench(rx_frontend)
 add_testbench(tx_frontend)
 add_testbench(wb_interface)
-add_testbench(ecap5_wbuart)
+add_testbench(ecap5_dwbuart)
 
 # Main targets
 add_custom_target(build DEPENDS ${TEST_BINARIES})
