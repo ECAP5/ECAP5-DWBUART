@@ -1,9 +1,7 @@
 Configuration
 =============
 
-Constants
----------
-
 Instanciation parameters
 ------------------------
 
+N/A

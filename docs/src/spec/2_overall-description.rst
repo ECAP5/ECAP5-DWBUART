@@ -103,6 +103,4 @@ Memory-Mapped Interface
 Assumptions and Dependencies
 ----------------------------
 
-.. todo:: Describe what the assumptions for the product are
-
-  Targeting the ecp5 family, based around opensource toolchains.
+N/A
