@@ -239,7 +239,8 @@ Serial protocol
 ^^^^^^^^^^^^^^^
 
 .. requirement:: F_UART_01
-  :derivedfrom: U_UART_01, U_UART_02
+   :derivedfrom: U_UART_01, U_UART_02
+
    The following frame format shall be used to encode and decode transit/receive data.
 
 .. image:: ../assets/uart.svg

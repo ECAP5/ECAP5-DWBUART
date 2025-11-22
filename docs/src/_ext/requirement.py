@@ -57,22 +57,31 @@ class Requirement(ObjectDescription):
             body += row
 
         if "derivedfrom" in self.options:
+            derivedfrom_list = self.options['derivedfrom'].split(',')
             row = nodes.row()
             row += nodes.entry('', nodes.strong('', nodes.Text('Derived from')))
-            ref_node = addnodes.pending_xref(
-                "", 
-                nodes.literal('', 
-                    f"{self.options['derivedfrom']}",
-                    classes=["xref", "req", "req-ref"]
-                ),
-                refdoc=self.env.docname,
-                refdomain="req",
-                refexplicit=False,
-                reftype='ref',
-                reftarget=self.options['derivedfrom'],
-                refwarn=True,
-            )
-            row += nodes.entry('', nodes.paragraph('', '', ref_node))
+            derivedfrom_entry = nodes.entry()
+            for derivedfrom in derivedfrom_list:
+                derivedfrom = derivedfrom.strip()
+
+                if len(derivedfrom) > 0:
+                    ref_node = addnodes.pending_xref(
+                        "", 
+                        nodes.literal('', 
+                            f"{derivedfrom}",
+                            classes=["xref", "req", "req-ref"]
+                        ),
+                        refdoc=self.env.docname,
+                        refdomain="req",
+                        refexplicit=False,
+                        reftype='ref',
+                        reftarget=derivedfrom,
+                        refwarn=True,
+                    )
+                    p = nodes.paragraph()
+                    p += ref_node
+                    derivedfrom_entry += p
+            row += derivedfrom_entry
             body += row
             
 
