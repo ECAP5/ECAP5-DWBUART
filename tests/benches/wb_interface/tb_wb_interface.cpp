@@ -31,13 +31,14 @@
 #include "testbench.h"
 
 enum CondId {
-  COND_output,
+  COND_output = 0,
   COND_wishbone,
   __CondIdEnd
 };
 
 enum TestcaseId {
-  T_READ = 1,
+  T_RESET = 1,
+  T_READ,
   T_WRITE
 };
 
@@ -82,6 +83,55 @@ public:
     this->core->wb_cyc_i = 1;
   }
 };
+
+void tb_wb_interface_reset(TB_Wb_interface * tb) {
+  Vtb_wb_interface * core = tb->core;
+  core->testcase = T_RESET;
+
+  // The following actions are performed in this test :
+  //    tick 0. Reset (core is in reset)
+  //    tick 1. Still in reset (core is still in reset)
+  
+  //`````````````````````````````````
+  //      Set inputs
+  
+  core->rst_i = 1;
+
+  //=================================
+  //      Tick (0)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_wishbone, (core->wb_ack_o == 0));
+  tb->check(COND_output,   (core->read_o   == 0) &&
+                           (core->write_o  == 0));
+
+  //=================================
+  //      Tick (1)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_wishbone, (core->wb_ack_o == 0));
+  tb->check(COND_output,   (core->read_o   == 0) &&
+                           (core->write_o  == 0));
+
+  //`````````````````````````````````
+  //      Formal Checks 
+  
+  CHECK("tb_wb_interface.reset.01",
+      tb->conditions[COND_output],
+      "Failed to implement the output logic", tb->err_cycles[COND_output]);
+
+  CHECK("tb_wb_interface.reset.02",
+      tb->conditions[COND_wishbone],
+      "Failed to implement the wishbone protocol", tb->err_cycles[COND_wishbone]);
+}
 
 void tb_wb_interface_read(TB_Wb_interface * tb) {
   Vtb_wb_interface * core = tb->core;
@@ -267,6 +317,7 @@ int main(int argc, char ** argv, char ** env) {
 
   /************************************************************/
 
+  tb_wb_interface_reset(tb);
   tb_wb_interface_read(tb);
   tb_wb_interface_write(tb);
 

@@ -49,7 +49,7 @@ add_dependency(ECAP5_TREQ
   TAG tags/v2.3.1
   BINARY ecap5-treq)
 
-add_dependency(ECAP5_DTLIB
+add_dependency(ECAP5_DTESTLIB
   GIT ecap5/ecap5-dtestlib
   TAG tags/v1.0.0)
 
