@@ -92,13 +92,18 @@ void tb_wb_interface_reset(TB_Wb_interface * tb) {
   //    tick 0. Reset (core is in reset)
   //    tick 1. Still in reset (core is still in reset)
   
+  //=================================
+  //      Tick (0)
+  
+  tb->reset();
+
   //`````````````````````````````````
   //      Set inputs
   
   core->rst_i = 1;
 
   //=================================
-  //      Tick (0)
+  //      Tick (1)
   
   tb->tick();
 
@@ -308,6 +313,7 @@ int main(int argc, char ** argv, char ** env) {
   Verilated::traceEverOn(true);
 
   bool verbose = parse_verbose(argc, argv);
+  verbose=1;
 
   TB_Wb_interface * tb = new TB_Wb_interface;
   tb->open_trace("waves/wb_interface.vcd");
