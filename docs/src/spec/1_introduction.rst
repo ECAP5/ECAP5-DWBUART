@@ -19,7 +19,42 @@ ECAP5-DWBUART is a UART peripheral accessible through a wishbone bus. This perip
 Conventions
 -----------
 
-.. todo:: Requirements shall be described here.
+Requirement format
+^^^^^^^^^^^^^^^^^^
+
+This document details requirements with the following format :
+
+.. list-table:: Sample requirement
+  :width: 100%
+  :widths: 10 90
+
+  * - **ID**
+    - Requirement_ID
+
+  * - **Description**
+    - Requirement description
+
+  * - **Rationale**
+    - Requirement rationale
+
+  * - **DerivedFrom**
+    - Other_Requirement_ID
+
+with requirement IDs having the following format :
+
+  * ``U_*``: User requirements
+  * ``I_*``: External interface requirements
+  * ``F_*``: Functional requirements
+  * ``N_*``: Non-Functional requirements
+  * ``A_*``: Architecture requirements
+
+The requirement hierarchy and traceability scheme is detailed in the following figure.
+
+.. figure:: ../assets/traceability.svg
+   :align: center
+
+   Requirement hierarchy and traceability
+
 
 Definitions and Abbreviations
 -----------------------------

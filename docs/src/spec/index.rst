@@ -3,7 +3,9 @@ Specification Document
 
 .. image:: ../assets/architecture.svg
 
-.. todo:: Find a way to add a Table of Contents title here.
+.. container:: custom-title
+
+   Table of Contents
 
 .. toctree::
    :maxdepth: 3

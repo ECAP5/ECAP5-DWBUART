@@ -13,6 +13,7 @@ if(Sphinx_FOUND)
       "${CMAKE_CURRENT_LIST_DIR}/src/assets/uart.svg"
       "${CMAKE_CURRENT_LIST_DIR}/src/assets/wishbone-read.svg"
       "${CMAKE_CURRENT_LIST_DIR}/src/assets/wishbone-write.svg"
+      "${CMAKE_CURRENT_LIST_DIR}/src/assets/traceability.svg"
       "${CMAKE_CURRENT_LIST_DIR}/src/guide/registers.rst"
       "${CMAKE_CURRENT_LIST_DIR}/src/index.rst"
       "${CMAKE_CURRENT_LIST_DIR}/src/spec/content/uart_sr.rst"
