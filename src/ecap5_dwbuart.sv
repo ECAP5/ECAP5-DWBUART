@@ -66,7 +66,7 @@ module ecap5_dwbuart #(
 
 logic frontend_rst;
 
-logic[7:0]  mem_addr;
+logic[31:0] mem_addr;
 logic       mem_read, mem_write;
 logic[31:0] mem_read_data_d, mem_read_data_q, 
             mem_write_data;
@@ -137,7 +137,7 @@ tx_frontend #(
   .uart_tx_o      (uart_tx_o)
 );
 
-wb_interface wb_interface_inst (
+ecap5_dwbmmsc wb_interface_inst (
   .clk_i (clk_i),   .rst_i (rst_i),
   
   .wb_adr_i (wb_adr_i),  .wb_dat_o (wb_dat_o),  .wb_dat_i   (wb_dat_i),
@@ -148,7 +148,8 @@ wb_interface wb_interface_inst (
   .read_o       (mem_read),
   .read_data_i  (mem_read_data_q),
   .write_o      (mem_write),
-  .write_data_o (mem_write_data)
+  .write_data_o (mem_write_data),
+  .sel_o          ()
 );
 
 always_comb begin : register_access
