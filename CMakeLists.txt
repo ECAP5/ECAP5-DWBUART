@@ -51,7 +51,11 @@ add_dependency(ECAP5_TREQ
 
 add_dependency(ECAP5_DTESTLIB
   GIT ecap5/ecap5-dtestlib
-  TAG 29-add-add_testbench-cmake-function-to-this-repository)
+  TAG release/v1.1.0)
+
+add_dependency(ECAP5_DWBMMSC
+  GIT ecap5/ecap5-dwbmmsc
+  TAG release/v1.0.0)
 
 add_dependency(sphinx-cmake
   GIT ecap5/sphinx-cmake
@@ -82,7 +86,7 @@ add_subdirectory(tests)
 # Synthesis
 
 add_synthesis_target(
-  SOURCES ${CMAKE_CURRENT_LIST_DIR}/src/*
+  SOURCES ${CMAKE_CURRENT_LIST_DIR}/src/* ${ecap5_dwbmmsc_SOURCE_DIR}/src/*
   TOP_MODULE ecap5_dwbuart
   TARGET_FPGA ecp5
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/synth.json)
