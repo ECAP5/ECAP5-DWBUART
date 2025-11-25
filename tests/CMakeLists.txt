@@ -24,7 +24,7 @@ set(BENCH_DIR ${CMAKE_CURRENT_SOURCE_DIR}/benches/)
 # C++ bench include directory
 set(TEST_INCLUDE_DIR ${ecap5_dtestlib_SOURCE_DIR}/include)
 # HDL source directories
-set(SRC_DIRS ${CMAKE_SOURCE_DIR}/src/)
+set(SRC_DIRS ${CMAKE_SOURCE_DIR}/src/ ${ecap5_dwbmmsc_SOURCE_DIR}/src/)
 # HDL library directories
 set(LIBS_DIR ${ecap5_dtestlib_SOURCE_DIR}/src/)
 # Bench CSV output directory
@@ -47,14 +47,6 @@ add_testbench(
 
 add_testbench(
   MODULE       tx_frontend
-  BENCH_DIR    ${BENCH_DIR}
-  LIBS_DIR     ${LIBS_DIR}
-  TESTDATA_DIR ${TESTDATA_DIR}
-  SRC_DIRS     ${SRC_DIRS} 
-)
-
-add_testbench(
-  MODULE       wb_interface
   BENCH_DIR    ${BENCH_DIR}
   LIBS_DIR     ${LIBS_DIR}
   TESTDATA_DIR ${TESTDATA_DIR}
