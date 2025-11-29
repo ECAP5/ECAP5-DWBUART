@@ -36,6 +36,7 @@ enum CondId {
   COND_state,
   COND_output,
   COND_done,
+  COND_baudrate,
   __CondIdEnd
 };
 
@@ -79,7 +80,7 @@ public:
   }
   
   void _nop() {
-    core->cr_clk_div_i = 0;
+    core->cr_acc_incr_i = 0;
     core->cr_ds_i = 0;
     core->cr_p_i = 0;
     core->cr_s_i = 0;
@@ -88,10 +89,37 @@ public:
     core->dr_i = 0;
   }
 
-  void n_tick(int n) {
-    for(int i = 0; i < n; i++) {
+  float get_generated_baudrate(uint32_t baudrate) {
+    this->reset();
+
+    core->cr_acc_incr_i = ((double)baudrate * (1 << 16)) / 24000000;
+    core->cr_ds_i = 1;
+    core->cr_p_i = 1;
+    core->cr_s_i = 1;
+
+    core->transmit_i = 1;
+    core->dr_i = 0x7A;
+
+    // Wait for the tx signal to go down
+    while(core->uart_tx_o == 1) {
       this->tick();
     }
+
+    // Initializes the clock counter
+    uint32_t counter = 0;
+
+    // Wait for the end of the transfer
+    while(core->done_o != 1) {
+      counter += 1; 
+
+      this->tick();
+    }
+
+    // Compute the baudrate
+    float duration = (counter / 24000000.0);
+    float baud_period = duration / 12;
+    float generated_baudrate = (1.0 / baud_period);
+    return generated_baudrate;
   }
 };
 
@@ -181,7 +209,8 @@ void tb_tx_frontend_7N1(TB_Tx_frontend * tb) {
   //`````````````````````````````````
   //      Set inputs
   
-  core->cr_clk_div_i = 4;
+  // Baudrate = 2500000 -> 9.6 cycles d'horloge
+  core->cr_acc_incr_i = 6827;
   core->cr_ds_i = 0;
   core->cr_p_i = 0;
   core->cr_s_i = 0;
@@ -207,111 +236,152 @@ void tb_tx_frontend_7N1(TB_Tx_frontend * tb) {
   core->transmit_i = 0;
 
   //=================================
-  //      Tick (2-5)
+  //      Tick (2-10)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 9; i++) {
+    tb->tick();
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 0));
-  tb->check(COND_done,   (core->done_o == 0));
-
-  //=================================
-  //      Tick (6-9)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_START));
+    tb->check(COND_output, (core->uart_tx_o == 0));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
 
   //=================================
-  //      Tick (10-13)
+  //      Tick (11-20)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 0));
-  tb->check(COND_done,   (core->done_o == 0));
-
-  //=================================
-  //      Tick (14-17)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 0));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
 
   //=================================
-  //      Tick (18-21)
+  //      Tick (21-29)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 9; i++) {
+    tb->tick();
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
-
-  //=================================
-  //      Tick (22-25)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
 
   //=================================
-  //      Tick (26-29)
+  //      Tick (30-39)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 0));
-  tb->check(COND_done,   (core->done_o == 0));
-
-  //=================================
-  //      Tick (30-33)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_STOP));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 0));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
 
   //=================================
-  //      Tick (34-37)
+  //      Tick (40-49)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (50-58)
+  
+  for(size_t i = 0; i < 9; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (59-68)
+  
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (69-77)
+  
+  for(size_t i = 0; i < 9; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 0));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (78-87)
+  
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_STOP));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (88)
+  
+  tb->tick();
 
   //`````````````````````````````````
   //      Checks 
   
   tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_IDLE));
   tb->check(COND_done,   (core->done_o == 1));
+
+  //=================================
+  //      Tick (89)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_IDLE));
+  tb->check(COND_done,   (core->done_o == 0));
 
   //`````````````````````````````````
   //      Formal Checks 
@@ -341,7 +411,8 @@ void tb_tx_frontend_7N2(TB_Tx_frontend * tb) {
   //`````````````````````````````````
   //      Set inputs
   
-  core->cr_clk_div_i = 4;
+  // Baudrate = 2500000 -> 9.6 cycles d'horloge
+  core->cr_acc_incr_i = 6827;
   core->cr_ds_i = 0;
   core->cr_p_i = 0;
   core->cr_s_i = 1;
@@ -367,123 +438,166 @@ void tb_tx_frontend_7N2(TB_Tx_frontend * tb) {
   core->transmit_i = 0;
 
   //=================================
-  //      Tick (2-5)
+  //      Tick (2-10)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 9; i++) {
+    tb->tick();
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 0));
-  tb->check(COND_done,   (core->done_o == 0));
-
-  //=================================
-  //      Tick (6-9)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_START));
+    tb->check(COND_output, (core->uart_tx_o == 0));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
 
   //=================================
-  //      Tick (10-13)
+  //      Tick (11-20)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 0));
-  tb->check(COND_done,   (core->done_o == 0));
-
-  //=================================
-  //      Tick (14-17)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 0));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
 
   //=================================
-  //      Tick (18-21)
+  //      Tick (21-29)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 9; i++) {
+    tb->tick();
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
-
-  //=================================
-  //      Tick (22-25)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
 
   //=================================
-  //      Tick (26-29)
+  //      Tick (30-39)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 0));
-  tb->check(COND_done,   (core->done_o == 0));
-
-  //=================================
-  //      Tick (30-33)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_STOP));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 0));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
 
   //=================================
-  //      Tick (34-37)
+  //      Tick (40-49)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_STOP));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
 
   //=================================
-  //      Tick (38-41)
+  //      Tick (50-58)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 9; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (59-68)
+  
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (69-77)
+  
+  for(size_t i = 0; i < 9; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 0));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (78-87)
+  
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_STOP));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (88-96)
+  
+  for(size_t i = 0; i < 9; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_STOP));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (97)
+  
+  tb->tick();
 
   //`````````````````````````````````
   //      Checks 
   
   tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_IDLE));
   tb->check(COND_done,   (core->done_o == 1));
+
+  //=================================
+  //      Tick (98)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_IDLE));
+  tb->check(COND_done,   (core->done_o == 0));
 
   //`````````````````````````````````
   //      Formal Checks 
@@ -513,7 +627,8 @@ void tb_tx_frontend_7E1(TB_Tx_frontend * tb) {
   //`````````````````````````````````
   //      Set inputs
   
-  core->cr_clk_div_i = 4;
+  // Baudrate = 2500000 -> 9.6 cycles d'horloge
+  core->cr_acc_incr_i = 6827;
   core->cr_ds_i = 0;
   core->cr_p_i = 2;
   core->cr_s_i = 0;
@@ -539,123 +654,167 @@ void tb_tx_frontend_7E1(TB_Tx_frontend * tb) {
   core->transmit_i = 0;
 
   //=================================
-  //      Tick (2-5)
+  //      Tick (2-10)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 9; i++) {
+    tb->tick();
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 0));
-  tb->check(COND_done,   (core->done_o == 0));
-
-  //=================================
-  //      Tick (6-9)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_START));
+    tb->check(COND_output, (core->uart_tx_o == 0));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
 
   //=================================
-  //      Tick (10-13)
+  //      Tick (11-20)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 0));
-  tb->check(COND_done,   (core->done_o == 0));
-
-  //=================================
-  //      Tick (14-17)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 0));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
 
   //=================================
-  //      Tick (18-21)
+  //      Tick (21-29)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 9; i++) {
+    tb->tick();
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
-
-  //=================================
-  //      Tick (22-25)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
 
   //=================================
-  //      Tick (26-29)
+  //      Tick (30-39)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 0));
-  tb->check(COND_done,   (core->done_o == 0));
-
-  //=================================
-  //      Tick (30-33)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_PARITY));
-  tb->check(COND_output, (core->uart_tx_o == 0));
-  tb->check(COND_done,   (core->done_o == 0));
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 0));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
 
   //=================================
-  //      Tick (34-37)
+  //      Tick (40-49)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_STOP));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
 
   //=================================
-  //      Tick (38-41)
+  //      Tick (50-58)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 9; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (59-68)
+  
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (69-77)
+  
+  for(size_t i = 0; i < 9; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 0));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (78-87)
+  
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_PARITY));
+    tb->check(COND_output, (core->uart_tx_o == 0));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (88-96)
+  
+  for(size_t i = 0; i < 9; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_STOP));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (97)
+  
+  tb->tick();
 
   //`````````````````````````````````
   //      Checks 
   
   tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_IDLE));
   tb->check(COND_done,   (core->done_o == 1));
+
+  //=================================
+  //      Tick (98)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_IDLE));
+  tb->check(COND_done,   (core->done_o == 0));
+
 
   //`````````````````````````````````
   //      Formal Checks 
@@ -671,11 +830,12 @@ void tb_tx_frontend_7E1(TB_Tx_frontend * tb) {
   CHECK("tb_tx_frontend.7E1.03",
       tb->conditions[COND_done],
       "Failed to implement the done signal", tb->err_cycles[COND_done]);
+  
 }
 
 void tb_tx_frontend_7E2(TB_Tx_frontend * tb) {
   Vtb_tx_frontend * core = tb->core;
-  core->testcase = T_7E1;
+  core->testcase = T_7E2;
 
   //=================================
   //      Tick (0)
@@ -685,13 +845,14 @@ void tb_tx_frontend_7E2(TB_Tx_frontend * tb) {
   //`````````````````````````````````
   //      Set inputs
   
-  core->cr_clk_div_i = 4;
+  // Baudrate = 2500000 -> 9.6 cycles d'horloge
+  core->cr_acc_incr_i = 6827;
   core->cr_ds_i = 0;
   core->cr_p_i = 2;
-  core->cr_s_i = 0;
+  core->cr_s_i = 1;
 
   core->transmit_i = 1;
-  core->dr_i = 0x4A;
+  core->dr_i = 0x3A;
 
   //=================================
   //      Tick (1)
@@ -711,123 +872,180 @@ void tb_tx_frontend_7E2(TB_Tx_frontend * tb) {
   core->transmit_i = 0;
 
   //=================================
-  //      Tick (2-5)
+  //      Tick (2-10)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 9; i++) {
+    tb->tick();
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 0));
-  tb->check(COND_done,   (core->done_o == 0));
-
-  //=================================
-  //      Tick (6-9)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_START));
+    tb->check(COND_output, (core->uart_tx_o == 0));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
 
   //=================================
-  //      Tick (10-13)
+  //      Tick (11-20)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 0));
-  tb->check(COND_done,   (core->done_o == 0));
-
-  //=================================
-  //      Tick (14-17)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 0));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
 
   //=================================
-  //      Tick (18-21)
+  //      Tick (21-29)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 9; i++) {
+    tb->tick();
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 0));
-  tb->check(COND_done,   (core->done_o == 0));
-
-  //=================================
-  //      Tick (22-25)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 0));
-  tb->check(COND_done,   (core->done_o == 0));
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
 
   //=================================
-  //      Tick (26-29)
+  //      Tick (30-39)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
-
-  //=================================
-  //      Tick (30-33)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_PARITY));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 0));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
 
   //=================================
-  //      Tick (34-37)
+  //      Tick (40-49)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_STOP));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
 
   //=================================
-  //      Tick (38-41)
+  //      Tick (50-58)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 9; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (59-68)
+  
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (69-77)
+  
+  for(size_t i = 0; i < 9; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 0));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (78-87)
+  
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_PARITY));
+    tb->check(COND_output, (core->uart_tx_o == 0));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (88-96)
+  
+  for(size_t i = 0; i < 9; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_STOP));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (97-106)
+  
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_STOP));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (107)
+  
+  tb->tick();
 
   //`````````````````````````````````
   //      Checks 
   
   tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_IDLE));
   tb->check(COND_done,   (core->done_o == 1));
+
+  //=================================
+  //      Tick (108)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_IDLE));
+  tb->check(COND_done,   (core->done_o == 0));
 
   //`````````````````````````````````
   //      Formal Checks 
@@ -857,13 +1075,14 @@ void tb_tx_frontend_7O1(TB_Tx_frontend * tb) {
   //`````````````````````````````````
   //      Set inputs
   
-  core->cr_clk_div_i = 4;
+  // Baudrate = 2500000 -> 9.6 cycles d'horloge
+  core->cr_acc_incr_i = 6827;
   core->cr_ds_i = 0;
   core->cr_p_i = 1;
   core->cr_s_i = 0;
 
   core->transmit_i = 1;
-  core->dr_i = 0x7A;
+  core->dr_i = 0x3A;
 
   //=================================
   //      Tick (1)
@@ -883,123 +1102,166 @@ void tb_tx_frontend_7O1(TB_Tx_frontend * tb) {
   core->transmit_i = 0;
 
   //=================================
-  //      Tick (2-5)
+  //      Tick (2-10)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 9; i++) {
+    tb->tick();
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 0));
-  tb->check(COND_done,   (core->done_o == 0));
-
-  //=================================
-  //      Tick (6-9)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_START));
+    tb->check(COND_output, (core->uart_tx_o == 0));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
 
   //=================================
-  //      Tick (10-13)
+  //      Tick (11-20)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 0));
-  tb->check(COND_done,   (core->done_o == 0));
-
-  //=================================
-  //      Tick (14-17)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 0));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
 
   //=================================
-  //      Tick (18-21)
+  //      Tick (21-29)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 9; i++) {
+    tb->tick();
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
-
-  //=================================
-  //      Tick (22-25)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
 
   //=================================
-  //      Tick (26-29)
+  //      Tick (30-39)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
-
-  //=================================
-  //      Tick (30-33)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_PARITY));
-  tb->check(COND_output, (core->uart_tx_o == 0));
-  tb->check(COND_done,   (core->done_o == 0));
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 0));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
 
   //=================================
-  //      Tick (34-37)
+  //      Tick (40-49)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_STOP));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
 
   //=================================
-  //      Tick (38-41)
+  //      Tick (50-58)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 9; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (59-68)
+  
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (69-77)
+  
+  for(size_t i = 0; i < 9; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 0));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (78-87)
+  
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_PARITY));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (88-96)
+  
+  for(size_t i = 0; i < 9; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_STOP));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (97)
+  
+  tb->tick();
 
   //`````````````````````````````````
   //      Checks 
   
   tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_IDLE));
   tb->check(COND_done,   (core->done_o == 1));
+
+  //=================================
+  //      Tick (98)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_IDLE));
+  tb->check(COND_done,   (core->done_o == 0));
 
   //`````````````````````````````````
   //      Formal Checks 
@@ -1029,13 +1291,14 @@ void tb_tx_frontend_7O2(TB_Tx_frontend * tb) {
   //`````````````````````````````````
   //      Set inputs
   
-  core->cr_clk_div_i = 4;
+  // Baudrate = 2500000 -> 9.6 cycles d'horloge
+  core->cr_acc_incr_i = 6827;
   core->cr_ds_i = 0;
   core->cr_p_i = 1;
-  core->cr_s_i = 0;
+  core->cr_s_i = 1;
 
   core->transmit_i = 1;
-  core->dr_i = 0x4A;
+  core->dr_i = 0x3A;
 
   //=================================
   //      Tick (1)
@@ -1055,123 +1318,180 @@ void tb_tx_frontend_7O2(TB_Tx_frontend * tb) {
   core->transmit_i = 0;
 
   //=================================
-  //      Tick (2-5)
+  //      Tick (2-10)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 9; i++) {
+    tb->tick();
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 0));
-  tb->check(COND_done,   (core->done_o == 0));
-
-  //=================================
-  //      Tick (6-9)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_START));
+    tb->check(COND_output, (core->uart_tx_o == 0));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
 
   //=================================
-  //      Tick (10-13)
+  //      Tick (11-20)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 0));
-  tb->check(COND_done,   (core->done_o == 0));
-
-  //=================================
-  //      Tick (14-17)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 0));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
 
   //=================================
-  //      Tick (18-21)
+  //      Tick (21-29)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 9; i++) {
+    tb->tick();
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 0));
-  tb->check(COND_done,   (core->done_o == 0));
-
-  //=================================
-  //      Tick (22-25)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 0));
-  tb->check(COND_done,   (core->done_o == 0));
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
 
   //=================================
-  //      Tick (26-29)
+  //      Tick (30-39)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
-
-  //=================================
-  //      Tick (30-33)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_PARITY));
-  tb->check(COND_output, (core->uart_tx_o == 0));
-  tb->check(COND_done,   (core->done_o == 0));
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 0));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
 
   //=================================
-  //      Tick (34-37)
+  //      Tick (40-49)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_STOP));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
 
   //=================================
-  //      Tick (38-41)
+  //      Tick (50-58)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 9; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (59-68)
+  
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (69-77)
+  
+  for(size_t i = 0; i < 9; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 0));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (78-87)
+  
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_PARITY));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (88-96)
+  
+  for(size_t i = 0; i < 9; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_STOP));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (97-106)
+  
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_STOP));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (107)
+  
+  tb->tick();
 
   //`````````````````````````````````
   //      Checks 
   
   tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_IDLE));
   tb->check(COND_done,   (core->done_o == 1));
+
+  //=================================
+  //      Tick (108)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_IDLE));
+  tb->check(COND_done,   (core->done_o == 0));
 
   //`````````````````````````````````
   //      Formal Checks 
@@ -1201,7 +1521,8 @@ void tb_tx_frontend_8N1(TB_Tx_frontend * tb) {
   //`````````````````````````````````
   //      Set inputs
   
-  core->cr_clk_div_i = 4;
+  // Baudrate = 2500000 -> 9.6 cycles d'horloge
+  core->cr_acc_incr_i = 6827;
   core->cr_ds_i = 1;
   core->cr_p_i = 0;
   core->cr_s_i = 0;
@@ -1227,123 +1548,166 @@ void tb_tx_frontend_8N1(TB_Tx_frontend * tb) {
   core->transmit_i = 0;
 
   //=================================
-  //      Tick (2-5)
+  //      Tick (2-10)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 9; i++) {
+    tb->tick();
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 0));
-  tb->check(COND_done,   (core->done_o == 0));
-
-  //=================================
-  //      Tick (6-9)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_START));
+    tb->check(COND_output, (core->uart_tx_o == 0));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
 
   //=================================
-  //      Tick (10-13)
+  //      Tick (11-20)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 0));
-  tb->check(COND_done,   (core->done_o == 0));
-
-  //=================================
-  //      Tick (14-17)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 0));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
 
   //=================================
-  //      Tick (18-21)
+  //      Tick (21-29)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 9; i++) {
+    tb->tick();
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
-
-  //=================================
-  //      Tick (22-25)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
 
   //=================================
-  //      Tick (26-29)
+  //      Tick (30-39)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
-
-  //=================================
-  //      Tick (30-33)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 0));
-  tb->check(COND_done,   (core->done_o == 0));
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 0));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
 
   //=================================
-  //      Tick (34-37)
+  //      Tick (40-49)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_STOP));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
 
   //=================================
-  //      Tick (38-41)
+  //      Tick (50-58)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 9; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (59-68)
+  
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (69-77)
+  
+  for(size_t i = 0; i < 9; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (78-87)
+  
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 0));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (88-96)
+  
+  for(size_t i = 0; i < 9; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_STOP));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (97)
+  
+  tb->tick();
 
   //`````````````````````````````````
   //      Checks 
   
   tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_IDLE));
   tb->check(COND_done,   (core->done_o == 1));
+
+  //=================================
+  //      Tick (98)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_IDLE));
+  tb->check(COND_done,   (core->done_o == 0));
 
   //`````````````````````````````````
   //      Formal Checks 
@@ -1373,7 +1737,8 @@ void tb_tx_frontend_8N2(TB_Tx_frontend * tb) {
   //`````````````````````````````````
   //      Set inputs
   
-  core->cr_clk_div_i = 4;
+  // Baudrate = 2500000 -> 9.6 cycles d'horloge
+  core->cr_acc_incr_i = 6827;
   core->cr_ds_i = 1;
   core->cr_p_i = 0;
   core->cr_s_i = 1;
@@ -1399,135 +1764,180 @@ void tb_tx_frontend_8N2(TB_Tx_frontend * tb) {
   core->transmit_i = 0;
 
   //=================================
-  //      Tick (2-5)
+  //      Tick (2-10)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 9; i++) {
+    tb->tick();
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 0));
-  tb->check(COND_done,   (core->done_o == 0));
-
-  //=================================
-  //      Tick (6-9)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_START));
+    tb->check(COND_output, (core->uart_tx_o == 0));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
 
   //=================================
-  //      Tick (10-13)
+  //      Tick (11-20)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 0));
-  tb->check(COND_done,   (core->done_o == 0));
-
-  //=================================
-  //      Tick (14-17)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 0));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
 
   //=================================
-  //      Tick (18-21)
+  //      Tick (21-29)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 9; i++) {
+    tb->tick();
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
-
-  //=================================
-  //      Tick (22-25)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
 
   //=================================
-  //      Tick (26-29)
+  //      Tick (30-39)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
-
-  //=================================
-  //      Tick (30-33)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 0));
-  tb->check(COND_done,   (core->done_o == 0));
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 0));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
 
   //=================================
-  //      Tick (34-37)
+  //      Tick (40-49)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_STOP));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
-
-  //=================================
-  //      Tick (38-41)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_STOP));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
 
   //=================================
-  //      Tick (42-45)
+  //      Tick (50-58)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 9; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (59-68)
+  
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (69-77)
+  
+  for(size_t i = 0; i < 9; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (78-87)
+  
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 0));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (88-96)
+  
+  for(size_t i = 0; i < 9; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_STOP));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (97-106)
+  
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_STOP));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (107)
+  
+  tb->tick();
 
   //`````````````````````````````````
   //      Checks 
   
   tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_IDLE));
   tb->check(COND_done,   (core->done_o == 1));
+
+  //=================================
+  //      Tick (108)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_IDLE));
+  tb->check(COND_done,   (core->done_o == 0));
 
   //`````````````````````````````````
   //      Formal Checks 
@@ -1557,7 +1967,8 @@ void tb_tx_frontend_8E1(TB_Tx_frontend * tb) {
   //`````````````````````````````````
   //      Set inputs
   
-  core->cr_clk_div_i = 4;
+  // Baudrate = 2500000 -> 9.6 cycles d'horloge
+  core->cr_acc_incr_i = 6827;
   core->cr_ds_i = 1;
   core->cr_p_i = 2;
   core->cr_s_i = 0;
@@ -1583,135 +1994,181 @@ void tb_tx_frontend_8E1(TB_Tx_frontend * tb) {
   core->transmit_i = 0;
 
   //=================================
-  //      Tick (2-5)
+  //      Tick (2-10)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 9; i++) {
+    tb->tick();
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 0));
-  tb->check(COND_done,   (core->done_o == 0));
-
-  //=================================
-  //      Tick (6-9)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_START));
+    tb->check(COND_output, (core->uart_tx_o == 0));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
 
   //=================================
-  //      Tick (10-13)
+  //      Tick (11-20)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 0));
-  tb->check(COND_done,   (core->done_o == 0));
-
-  //=================================
-  //      Tick (14-17)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 0));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
 
   //=================================
-  //      Tick (18-21)
+  //      Tick (21-29)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 9; i++) {
+    tb->tick();
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
-
-  //=================================
-  //      Tick (22-25)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
 
   //=================================
-  //      Tick (26-29)
+  //      Tick (30-39)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
-
-  //=================================
-  //      Tick (30-33)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 0));
-  tb->check(COND_done,   (core->done_o == 0));
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 0));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
 
   //=================================
-  //      Tick (34-37)
+  //      Tick (40-49)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_PARITY));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
-
-  //=================================
-  //      Tick (38-41)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_STOP));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
 
   //=================================
-  //      Tick (42-45)
+  //      Tick (50-58)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 9; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (59-68)
+  
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (69-77)
+  
+  for(size_t i = 0; i < 9; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (78-87)
+  
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 0));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (88-96)
+  
+  for(size_t i = 0; i < 9; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_PARITY));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (97-106)
+  
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_STOP));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (107)
+  
+  tb->tick();
 
   //`````````````````````````````````
   //      Checks 
   
   tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_IDLE));
   tb->check(COND_done,   (core->done_o == 1));
+
+  //=================================
+  //      Tick (108)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_IDLE));
+  tb->check(COND_done,   (core->done_o == 0));
+
 
   //`````````````````````````````````
   //      Formal Checks 
@@ -1741,13 +2198,14 @@ void tb_tx_frontend_8E2(TB_Tx_frontend * tb) {
   //`````````````````````````````````
   //      Set inputs
   
-  core->cr_clk_div_i = 4;
+  // Baudrate = 2500000 -> 9.6 cycles d'horloge
+  core->cr_acc_incr_i = 6827;
   core->cr_ds_i = 1;
   core->cr_p_i = 2;
   core->cr_s_i = 1;
 
   core->transmit_i = 1;
-  core->dr_i = 0x3A;
+  core->dr_i = 0x7A;
 
   //=================================
   //      Tick (1)
@@ -1767,147 +2225,194 @@ void tb_tx_frontend_8E2(TB_Tx_frontend * tb) {
   core->transmit_i = 0;
 
   //=================================
-  //      Tick (2-5)
+  //      Tick (2-10)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 9; i++) {
+    tb->tick();
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 0));
-  tb->check(COND_done,   (core->done_o == 0));
-
-  //=================================
-  //      Tick (6-9)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_START));
+    tb->check(COND_output, (core->uart_tx_o == 0));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
 
   //=================================
-  //      Tick (10-13)
+  //      Tick (11-20)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 0));
-  tb->check(COND_done,   (core->done_o == 0));
-
-  //=================================
-  //      Tick (14-17)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 0));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
 
   //=================================
-  //      Tick (18-21)
+  //      Tick (21-29)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 9; i++) {
+    tb->tick();
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
-
-  //=================================
-  //      Tick (22-25)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
 
   //=================================
-  //      Tick (26-29)
+  //      Tick (30-39)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 0));
-  tb->check(COND_done,   (core->done_o == 0));
-
-  //=================================
-  //      Tick (30-33)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 0));
-  tb->check(COND_done,   (core->done_o == 0));
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 0));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
 
   //=================================
-  //      Tick (34-37)
+  //      Tick (40-49)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_PARITY));
-  tb->check(COND_output, (core->uart_tx_o == 0));
-  tb->check(COND_done,   (core->done_o == 0));
-
-  //=================================
-  //      Tick (38-41)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_STOP));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
 
   //=================================
-  //      Tick (42-45)
+  //      Tick (50-58)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 9; i++) {
+    tb->tick();
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_STOP));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
 
   //=================================
-  //      Tick (46-49)
+  //      Tick (59-68)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (69-77)
+  
+  for(size_t i = 0; i < 9; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (78-87)
+  
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 0));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (88-96)
+  
+  for(size_t i = 0; i < 9; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_PARITY));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (97-106)
+  
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_STOP));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (107-116)
+  
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_STOP));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (117)
+  
+  tb->tick();
 
   //`````````````````````````````````
   //      Checks 
   
   tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_IDLE));
   tb->check(COND_done,   (core->done_o == 1));
+
+  //=================================
+  //      Tick (118)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_IDLE));
+  tb->check(COND_done,   (core->done_o == 0));
 
   //`````````````````````````````````
   //      Formal Checks 
@@ -1937,7 +2442,8 @@ void tb_tx_frontend_8O1(TB_Tx_frontend * tb) {
   //`````````````````````````````````
   //      Set inputs
   
-  core->cr_clk_div_i = 4;
+  // Baudrate = 2500000 -> 9.6 cycles d'horloge
+  core->cr_acc_incr_i = 6827;
   core->cr_ds_i = 1;
   core->cr_p_i = 1;
   core->cr_s_i = 0;
@@ -1963,135 +2469,180 @@ void tb_tx_frontend_8O1(TB_Tx_frontend * tb) {
   core->transmit_i = 0;
 
   //=================================
-  //      Tick (2-5)
+  //      Tick (2-10)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 9; i++) {
+    tb->tick();
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 0));
-  tb->check(COND_done,   (core->done_o == 0));
-
-  //=================================
-  //      Tick (6-9)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_START));
+    tb->check(COND_output, (core->uart_tx_o == 0));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
 
   //=================================
-  //      Tick (10-13)
+  //      Tick (11-20)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 0));
-  tb->check(COND_done,   (core->done_o == 0));
-
-  //=================================
-  //      Tick (14-17)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 0));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
 
   //=================================
-  //      Tick (18-21)
+  //      Tick (21-29)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 9; i++) {
+    tb->tick();
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
-
-  //=================================
-  //      Tick (22-25)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
 
   //=================================
-  //      Tick (26-29)
+  //      Tick (30-39)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
-
-  //=================================
-  //      Tick (30-33)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 0));
-  tb->check(COND_done,   (core->done_o == 0));
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 0));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
 
   //=================================
-  //      Tick (34-37)
+  //      Tick (40-49)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_PARITY));
-  tb->check(COND_output, (core->uart_tx_o == 0));
-  tb->check(COND_done,   (core->done_o == 0));
-
-  //=================================
-  //      Tick (38-41)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_STOP));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
 
   //=================================
-  //      Tick (42-45)
+  //      Tick (50-58)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 9; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (59-68)
+  
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (69-77)
+  
+  for(size_t i = 0; i < 9; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (78-87)
+  
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 0));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (88-96)
+  
+  for(size_t i = 0; i < 9; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_PARITY));
+    tb->check(COND_output, (core->uart_tx_o == 0));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (97-106)
+  
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_STOP));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (107)
+  
+  tb->tick();
 
   //`````````````````````````````````
   //      Checks 
   
   tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_IDLE));
   tb->check(COND_done,   (core->done_o == 1));
+
+  //=================================
+  //      Tick (108)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_IDLE));
+  tb->check(COND_done,   (core->done_o == 0));
 
   //`````````````````````````````````
   //      Formal Checks 
@@ -2121,13 +2672,14 @@ void tb_tx_frontend_8O2(TB_Tx_frontend * tb) {
   //`````````````````````````````````
   //      Set inputs
   
-  core->cr_clk_div_i = 4;
+  // Baudrate = 2500000 -> 9.6 cycles d'horloge
+  core->cr_acc_incr_i = 6827;
   core->cr_ds_i = 1;
   core->cr_p_i = 1;
   core->cr_s_i = 1;
 
   core->transmit_i = 1;
-  core->dr_i = 0x3A;
+  core->dr_i = 0x7A;
 
   //=================================
   //      Tick (1)
@@ -2147,147 +2699,194 @@ void tb_tx_frontend_8O2(TB_Tx_frontend * tb) {
   core->transmit_i = 0;
 
   //=================================
-  //      Tick (2-5)
+  //      Tick (2-10)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 9; i++) {
+    tb->tick();
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 0));
-  tb->check(COND_done,   (core->done_o == 0));
-
-  //=================================
-  //      Tick (6-9)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_START));
+    tb->check(COND_output, (core->uart_tx_o == 0));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
 
   //=================================
-  //      Tick (10-13)
+  //      Tick (11-20)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 0));
-  tb->check(COND_done,   (core->done_o == 0));
-
-  //=================================
-  //      Tick (14-17)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 0));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
 
   //=================================
-  //      Tick (18-21)
+  //      Tick (21-29)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 9; i++) {
+    tb->tick();
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
-
-  //=================================
-  //      Tick (22-25)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
 
   //=================================
-  //      Tick (26-29)
+  //      Tick (30-39)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 0));
-  tb->check(COND_done,   (core->done_o == 0));
-
-  //=================================
-  //      Tick (30-33)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 0));
-  tb->check(COND_done,   (core->done_o == 0));
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 0));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
 
   //=================================
-  //      Tick (34-37)
+  //      Tick (40-49)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_PARITY));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
-
-  //=================================
-  //      Tick (38-41)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_STOP));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
 
   //=================================
-  //      Tick (42-45)
+  //      Tick (50-58)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 9; i++) {
+    tb->tick();
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_STOP));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
 
   //=================================
-  //      Tick (46-49)
+  //      Tick (59-68)
   
-  tb->n_tick(4);
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (69-77)
+  
+  for(size_t i = 0; i < 9; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (78-87)
+  
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
+    tb->check(COND_output, (core->uart_tx_o == 0));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (88-96)
+  
+  for(size_t i = 0; i < 9; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_PARITY));
+    tb->check(COND_output, (core->uart_tx_o == 0));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (97-106)
+  
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_STOP));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (107-116)
+  
+  for(size_t i = 0; i < 10; i++) {
+    tb->tick();
+
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_STOP));
+    tb->check(COND_output, (core->uart_tx_o == 1));
+    tb->check(COND_done,   (core->done_o == 0));
+  }
+
+  //=================================
+  //      Tick (117)
+  
+  tb->tick();
 
   //`````````````````````````````````
   //      Checks 
   
   tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_IDLE));
   tb->check(COND_done,   (core->done_o == 1));
+
+  //=================================
+  //      Tick (118)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_IDLE));
+  tb->check(COND_done,   (core->done_o == 0));
 
   //`````````````````````````````````
   //      Formal Checks 
@@ -2309,160 +2908,38 @@ void tb_tx_frontend_baudrate(TB_Tx_frontend * tb) {
   Vtb_tx_frontend * core = tb->core;
   core->testcase = T_BAUDRATE;
 
-  //=================================
-  //      Tick (0)
-  
-  tb->reset();
+  uint32_t baudrates[] = {
+    4800,
+    9600,
+    19200,
+    38400,
+    57600,
+    115200,
+    230400,
+    460800,
+    921600,
+    1000000,
+    2000000,
+    3000000
+  };
+  size_t num_baudrates = sizeof(baudrates)/sizeof(uint32_t);
 
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->cr_clk_div_i = 100;
-  core->cr_ds_i = 0;
-  core->cr_p_i = 0;
-  core->cr_s_i = 0;
+  for(size_t i = 0; i < num_baudrates; i++) {
+    float generated_baudrate = tb->get_generated_baudrate(baudrates[i]);
+    float precision = (1.0 - (generated_baudrate / baudrates[i]));
 
-  core->transmit_i = 1;
-  core->dr_i = 0x3A;
-
-  //=================================
-  //      Tick (1)
-  
-  tb->tick();
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_START));
-  tb->check(COND_output, (core->uart_tx_o == 0));
-  tb->check(COND_done,   (core->done_o == 0));
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->transmit_i = 0;
-
-  //=================================
-  //      Tick (2-5)
-  
-  tb->n_tick(100);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 0));
-  tb->check(COND_done,   (core->done_o == 0));
-
-  //=================================
-  //      Tick (6-9)
-  
-  tb->n_tick(100);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
-
-  //=================================
-  //      Tick (10-13)
-  
-  tb->n_tick(100);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 0));
-  tb->check(COND_done,   (core->done_o == 0));
-
-  //=================================
-  //      Tick (14-17)
-  
-  tb->n_tick(100);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
-
-  //=================================
-  //      Tick (18-21)
-  
-  tb->n_tick(100);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
-
-  //=================================
-  //      Tick (22-25)
-  
-  tb->n_tick(100);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
-
-  //=================================
-  //      Tick (26-29)
-  
-  tb->n_tick(100);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_output, (core->uart_tx_o == 0));
-  tb->check(COND_done,   (core->done_o == 0));
-
-  //=================================
-  //      Tick (30-33)
-  
-  tb->n_tick(100);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_STOP));
-  tb->check(COND_output, (core->uart_tx_o == 1));
-  tb->check(COND_done,   (core->done_o == 0));
-
-  //=================================
-  //      Tick (34-37)
-  
-  tb->n_tick(100);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state,  (core->tb_tx_frontend->dut->state_q == S_IDLE));
-  tb->check(COND_done,   (core->done_o == 1));
+    //`````````````````````````````````
+    //      Checks 
+    
+    tb->check(COND_baudrate,  (precision < 0.02));
+  }
 
   //`````````````````````````````````
   //      Formal Checks 
   
   CHECK("tb_tx_frontend.baudrate.01",
-      tb->conditions[COND_state],
-      "Failed to implement the state machine", tb->err_cycles[COND_state]);
-
-  CHECK("tb_tx_frontend.baudrate.02",
-      tb->conditions[COND_output],
-      "Failed to implement the output signal", tb->err_cycles[COND_output]);
-
-  CHECK("tb_tx_frontend.baudrate.03",
-      tb->conditions[COND_done],
-      "Failed to implement the done signal", tb->err_cycles[COND_done]);
+      tb->conditions[COND_baudrate],
+      "Failed to comply with the baudrate precision", tb->err_cycles[COND_baudrate]);
 }
 
 int main(int argc, char ** argv, char ** env) {
@@ -2470,12 +2947,16 @@ int main(int argc, char ** argv, char ** env) {
   Verilated::traceEverOn(true);
 
   bool verbose = parse_verbose(argc, argv);
+  verbose = true;
 
   TB_Tx_frontend * tb = new TB_Tx_frontend;
   tb->open_trace("waves/tx_frontend.vcd");
   tb->open_testdata("testdata/tx_frontend.csv");
   tb->set_debug_log(verbose);
   tb->init_conditions(__CondIdEnd);
+
+  // 24MHz
+  tb->clk_period_in_ps = 41667;
 
   /************************************************************/
 

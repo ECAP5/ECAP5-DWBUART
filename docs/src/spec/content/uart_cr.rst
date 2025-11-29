@@ -14,7 +14,7 @@ UART_CR contains the control for selecting the UART baudrate, parity, size and s
             { "name": "S", "bits": 1},
             { "name": "DS", "bits": 1},
             { "name": "reserved", "bits": 12, "type": 1},
-            { "name": "CLK_DIV", "bits": 16}
+            { "name": "ACC_INCR", "bits": 16}
         ]
 
 |
@@ -28,10 +28,10 @@ UART_CR contains the control for selecting the UART baudrate, parity, size and s
     - Description
 
   * - 31-16
-    - CLK_DIV
-    - *Clock Divider/Baud Rate selector*
+    - ACC_INCR
+    - *Accumulator increment/Baudrate selector*
 
-      The specified clock divider determines the baud rate with the formula Baud Rate = Freq / CLK_DIV.
+      The specified accumulator increment determines the baud rate with the formula ACC_INCR = round(baudrate * 2^15 / freq).
   * - 15-4
     - reserved
     - *This field is reserved.*
@@ -50,7 +50,7 @@ UART_CR contains the control for selecting the UART baudrate, parity, size and s
        
       0 |tab| 1 stop bit
 
-      2 |tab| 1.5 stop bits
+      1 |tab| 2 stop bits
   * - 1-0
     - P
     - *Parity bit selector*
