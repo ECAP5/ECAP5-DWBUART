@@ -27,7 +27,7 @@ module rx_frontend #(
   input   logic         clk_i,
   input   logic         rst_i,
 
-  input   logic[15:0]   cr_clk_div_i,
+  input   logic[15:0]   cr_acc_incr_i,
   input   logic         cr_ds_i,
   input   logic[1:0]    cr_p_i,
   input   logic         cr_s_i,
@@ -127,7 +127,7 @@ always_comb begin : sampling
         // It takes one cycle for this counter to be decremented (switch to START state)
         // It takes on cycle for logic to detect this counter is null
         // The counter is therefore initialized to half the baud interval - 2
-        half_baud_cnt_d = {1'b0, cr_clk_div_i[15:1]} - 2;
+        half_baud_cnt_d = {1'b0, cr_acc_incr_i[15:1]} - 2;
       end
     end
     START: begin
@@ -136,7 +136,7 @@ always_comb begin : sampling
       if(half_baud_cnt_q == '0) begin
         // It takes one cycle for logic to detect this counter is null
         // The counter is therefore initialized to the baud interval - 1
-        baud_cnt_d = cr_clk_div_i - 1;
+        baud_cnt_d = cr_acc_incr_i - 1;
         // Initialize the frame size ring counter
         frame_bit_cnt_d[0] = 1'b1;
         // Initialize the parity bit with the parity configuration bit
@@ -151,7 +151,7 @@ always_comb begin : sampling
         //   2. decrement the frame bit counter
         //   3. sample the input
         //   4. update the computed parity
-        baud_cnt_d = cr_clk_div_i - 1;
+        baud_cnt_d = cr_acc_incr_i - 1;
         frame_bit_cnt_d = {frame_bit_cnt_d[MAX_FRAME_SIZE-1:0], 1'b0};
         frame_d = {uart_rx_qqq, frame_q[10:1]};
         parity_d = parity_q ^ (uart_rx_qqq & (~data_bit_cnt_done_q));
