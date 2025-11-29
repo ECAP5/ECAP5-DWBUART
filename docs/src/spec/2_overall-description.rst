@@ -42,6 +42,10 @@ Configuration
 
    The baud rate of the peripheral shall be software-configurable.
 
+.. requirement:: U_BAUD_RATE_02
+
+   The following baudrates shall be tested to be within 2% tolerance : 4800, 9600, 19200, 38400, 57600, 115200, 230400, 460800, 921600, 1000000, 2000000, 3000000.
+
 .. requirement:: U_PARITY_BIT_01
 
    The parity bit of the peripheral shall be software-configurable.

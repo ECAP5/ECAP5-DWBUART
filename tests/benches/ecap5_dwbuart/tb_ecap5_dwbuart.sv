@@ -84,7 +84,7 @@ public -module "ecap5_dwbuart" -var "rx_valid"
 public -module "ecap5_dwbuart" -var "tx_transmit_q"
 public -module "ecap5_dwbuart" -var "tx_done"
 
-public -module "ecap5_dwbuart" -var "cr_clk_div_q"
+public -module "ecap5_dwbuart" -var "cr_acc_incr_q"
 public -module "ecap5_dwbuart" -var "cr_ds_q"
 public -module "ecap5_dwbuart" -var "cr_s_q"
 public -module "ecap5_dwbuart" -var "cr_p_q"

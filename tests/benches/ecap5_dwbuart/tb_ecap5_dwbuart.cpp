@@ -116,7 +116,7 @@ public:
 
   uint32_t uart_cr() {
     uint32_t reg = 0;
-    reg |= core->tb_ecap5_dwbuart->dut->cr_clk_div_q << 16;
+    reg |= core->tb_ecap5_dwbuart->dut->cr_acc_incr_q << 16;
     reg |= core->tb_ecap5_dwbuart->dut->cr_ds_q << 3;
     reg |= core->tb_ecap5_dwbuart->dut->cr_s_q << 2;
     reg |= core->tb_ecap5_dwbuart->dut->cr_p_q;
@@ -131,28 +131,28 @@ public:
     return core->tb_ecap5_dwbuart->dut->txdr_txd_q;
   }
 
-  void send(uint32_t data, uint32_t clk_div, uint8_t ds, uint8_t p, uint8_t s, uint8_t inject_pe, uint8_t inject_fe) {
+  void send(uint32_t data, uint32_t acc_incr, uint8_t ds, uint8_t p, uint8_t s, uint8_t inject_pe, uint8_t inject_fe) {
     // Start bit
     this->core->uart_rx_i = 0;
-    this->n_tick(clk_div);
+    this->n_tick(acc_incr);
     // Data bits
     uint8_t num_data_bits = ds ? 8 : 7;
     uint8_t parity = p & 0x1;
     for(int i = 0; i < num_data_bits; i++) {
       this->core->uart_rx_i = (data >> i) & 0x1;
       parity ^= (data >> i) & 0x1;
-      this->n_tick(clk_div);
+      this->n_tick(acc_incr);
     }
     // Parity bits
     if(p) {
       this->core->uart_rx_i = inject_pe ? (parity ^ 1) : 0; 
-      this->n_tick(clk_div);
+      this->n_tick(acc_incr);
     }
     // Stop bits
     uint8_t num_stop_bits = s ? 2 : 1;
     for(int i = 0; i < num_stop_bits; i++) {
       this->core->uart_rx_i = !inject_fe;
-      this->n_tick(clk_div);
+      this->n_tick(acc_incr);
     }
   }
 };
@@ -388,7 +388,7 @@ void tb_ecap5_dwbuart_write_txdr(TB_Ecap5_dwbuart * tb) {
   //=================================
   //      Tick (6-7)
   
-  // Wait half clk_div
+  // Wait half acc_incr
   tb->n_tick(2);
 
   //`````````````````````````````````
