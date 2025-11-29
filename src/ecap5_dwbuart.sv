@@ -171,7 +171,7 @@ always_comb begin : register_access
   mem_read_data_d = 0;
   case(mem_addr[7:2])
     UART_SR:   mem_read_data_d = {27'b0, sr_pe_q, sr_fe_q, sr_rxoe_q, sr_txe_q, sr_rxne_q};
-    UART_CR:   mem_read_data_d = {cr_acc_incr_q, 12'b0, cr_s_q, cr_p_q, cr_ds_q};
+    UART_CR:   mem_read_data_d = {cr_acc_incr_q, 12'b0, cr_ds_q, cr_s_q, cr_p_q};
     UART_RXDR: mem_read_data_d = {24'b0, rxdr_rxd_q};
     default:   mem_read_data_d = '0;
   endcase
