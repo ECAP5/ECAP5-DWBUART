@@ -83,7 +83,7 @@ public:
   
   void _nop() {
     core->uart_rx_i = 1;
-    core->cr_clk_div_i = 0;
+    core->cr_acc_incr_i = 0;
     core->cr_ds_i = 0;
     core->cr_p_i = 0;
     core->cr_s_i = 0;
@@ -174,7 +174,7 @@ void tb_rx_frontend_valid_frame_7N1(TB_Rx_frontend * tb) {
   //`````````````````````````````````
   //      Set inputs
   
-  core->cr_clk_div_i = 4;
+  core->cr_acc_incr_i = (65535/4);
   core->cr_ds_i = 0;
   core->cr_p_i = 0;
   core->cr_s_i = 0;
@@ -367,7 +367,7 @@ void tb_rx_frontend_valid_frame_7N2(TB_Rx_frontend * tb) {
   //`````````````````````````````````
   //      Set inputs
   
-  core->cr_clk_div_i = 4;
+  core->cr_acc_incr_i = (65535/4);
   core->cr_ds_i = 0;
   core->cr_p_i = 0;
   core->cr_s_i = 1;
@@ -570,7 +570,7 @@ void tb_rx_frontend_valid_frame_7E1(TB_Rx_frontend * tb) {
   //`````````````````````````````````
   //      Set inputs
   
-  core->cr_clk_div_i = 4;
+  core->cr_acc_incr_i = (65535/4);
   core->cr_ds_i = 0;
   core->cr_p_i = 2;
   core->cr_s_i = 0;
@@ -773,7 +773,7 @@ void tb_rx_frontend_valid_frame_7E2(TB_Rx_frontend * tb) {
   //`````````````````````````````````
   //      Set inputs
   
-  core->cr_clk_div_i = 4;
+  core->cr_acc_incr_i = (65535/4);
   core->cr_ds_i = 0;
   core->cr_p_i = 2;
   core->cr_s_i = 1;
@@ -986,7 +986,7 @@ void tb_rx_frontend_valid_frame_7O1(TB_Rx_frontend * tb) {
   //`````````````````````````````````
   //      Set inputs
   
-  core->cr_clk_div_i = 4;
+  core->cr_acc_incr_i = (65535/4);
   core->cr_ds_i = 0;
   core->cr_p_i = 1;
   core->cr_s_i = 0;
@@ -1189,7 +1189,7 @@ void tb_rx_frontend_valid_frame_7O2(TB_Rx_frontend * tb) {
   //`````````````````````````````````
   //      Set inputs
   
-  core->cr_clk_div_i = 4;
+  core->cr_acc_incr_i = (65535/4);
   core->cr_ds_i = 0;
   core->cr_p_i = 1;
   core->cr_s_i = 1;
@@ -1402,7 +1402,7 @@ void tb_rx_frontend_valid_frame_8N1(TB_Rx_frontend * tb) {
   //`````````````````````````````````
   //      Set inputs
   
-  core->cr_clk_div_i = 4;
+  core->cr_acc_incr_i = (65535/4);
   core->cr_ds_i = 1;
   core->cr_p_i = 0;
   core->cr_s_i = 0;
@@ -1605,7 +1605,7 @@ void tb_rx_frontend_valid_frame_8N2(TB_Rx_frontend * tb) {
   //`````````````````````````````````
   //      Set inputs
   
-  core->cr_clk_div_i = 4;
+  core->cr_acc_incr_i = (65535/4);
   core->cr_ds_i = 1;
   core->cr_p_i = 0;
   core->cr_s_i = 1;
@@ -1818,7 +1818,7 @@ void tb_rx_frontend_valid_frame_8E1(TB_Rx_frontend * tb) {
   //`````````````````````````````````
   //      Set inputs
   
-  core->cr_clk_div_i = 4;
+  core->cr_acc_incr_i = (65535/4);
   core->cr_ds_i = 1;
   core->cr_p_i = 2;
   core->cr_s_i = 0;
@@ -2031,7 +2031,7 @@ void tb_rx_frontend_valid_frame_8E2(TB_Rx_frontend * tb) {
   //`````````````````````````````````
   //      Set inputs
   
-  core->cr_clk_div_i = 4;
+  core->cr_acc_incr_i = (65535/4);
   core->cr_ds_i = 1;
   core->cr_p_i = 2;
   core->cr_s_i = 1;
@@ -2254,7 +2254,7 @@ void tb_rx_frontend_valid_frame_8O1(TB_Rx_frontend * tb) {
   //`````````````````````````````````
   //      Set inputs
   
-  core->cr_clk_div_i = 4;
+  core->cr_acc_incr_i = (65535/4);
   core->cr_ds_i = 1;
   core->cr_p_i = 1;
   core->cr_s_i = 0;
@@ -2467,7 +2467,7 @@ void tb_rx_frontend_valid_frame_8O2(TB_Rx_frontend * tb) {
   //`````````````````````````````````
   //      Set inputs
   
-  core->cr_clk_div_i = 4;
+  core->cr_acc_incr_i = (65535/4);
   core->cr_ds_i = 1;
   core->cr_p_i = 1;
   core->cr_s_i = 1;
@@ -2690,7 +2690,7 @@ void tb_rx_frontend_baudrate(TB_Rx_frontend * tb) {
   //`````````````````````````````````
   //      Set inputs
   
-  core->cr_clk_div_i = 100;
+  core->cr_acc_incr_i = (65535/100);
   core->cr_ds_i = 0;
   core->cr_p_i = 0;
   core->cr_s_i = 0;
@@ -2902,7 +2902,7 @@ void tb_rx_frontend_parity_even(TB_Rx_frontend * tb) {
   //`````````````````````````````````
   //      Set inputs
   
-  core->cr_clk_div_i = 4;
+  core->cr_acc_incr_i = (65535/4);
   core->cr_ds_i = 0;
   core->cr_p_i = 2;
   core->cr_s_i = 0;
@@ -3158,7 +3158,7 @@ void tb_rx_frontend_parity_odd(TB_Rx_frontend * tb) {
   //`````````````````````````````````
   //      Set inputs
   
-  core->cr_clk_div_i = 4;
+  core->cr_acc_incr_i = (65535/4);
   core->cr_ds_i = 0;
   core->cr_p_i = 1;
   core->cr_s_i = 0;
