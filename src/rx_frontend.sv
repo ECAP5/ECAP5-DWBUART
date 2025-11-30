@@ -53,8 +53,8 @@ state_t state_d, state_q;
 
 logic uart_rx_q, uart_rx_qq, uart_rx_qqq;
 
-logic[15:0] half_baud_cnt_d, half_baud_cnt_q, 
-                 baud_cnt_d,      baud_cnt_q;
+logic[16:0] baud_acc_d, baud_acc_q;
+logic baud_acc_half_overflow, baud_acc_overflow;;
 
 logic[MAX_FRAME_SIZE:0]  frame_bit_cnt_d, frame_bit_cnt_q;
 
@@ -82,13 +82,13 @@ always_comb begin : state_machine
   case(state_q)
     IDLE: begin
       // Wait for the beginning of the start bit
-      if(uart_rx_qqq == 0) begin
+      if(uart_rx_qq == 0) begin
         state_d = START;
       end
     end
     START: begin
       // Wait for the middle of the start bit
-      if(half_baud_cnt_q == '0) begin
+      if(baud_acc_half_overflow) begin
         state_d = DATA;
       end
     end
@@ -103,8 +103,7 @@ always_comb begin : state_machine
 end
 
 always_comb begin : sampling
-  half_baud_cnt_d = 0;
-  baud_cnt_d = 0;
+  baud_acc_d = 0;
   frame_bit_cnt_d = frame_bit_cnt_q;
   frame_d = frame_q;
   parity_d = parity_q;
@@ -120,23 +119,27 @@ always_comb begin : sampling
 
   parity_bit = cr_ds_i ? frame_shifted[8] : frame_shifted[7];
 
+  // Baudrate accumulator overflow
+  baud_acc_overflow = baud_acc_q[16];
+  baud_acc_half_overflow = baud_acc_q[15];
+
   case(state_q)
     IDLE: begin
-      // We initialize the half_baud_rate counter at the start of the start bit
-      if(uart_rx_qqq == 0) begin
-        // It takes one cycle for this counter to be decremented (switch to START state)
-        // It takes on cycle for logic to detect this counter is null
-        // The counter is therefore initialized to half the baud interval - 2
-        half_baud_cnt_d = {1'b0, cr_acc_incr_i[15:1]} - 2;
+      // We initialize the baud_rate counter at the start of the start bit
+      if(uart_rx_qq == 0) begin
+        // This is initialized to (2**15) as we want it to overflow in half the baud period
+        // so that we sample in the middle of the bits
+        baud_acc_d = {2'b0, cr_acc_incr_i[14:0]};
       end
     end
     START: begin
-      half_baud_cnt_d = half_baud_cnt_q - 1;
+      baud_acc_d = {2'b0, baud_acc_q[14:0]} + {2'b0, cr_acc_incr_i[14:0]};
       // We initialize the data counter when reaching the middle of the start bit
-      if(half_baud_cnt_q == '0) begin
+      // This is reached when the 15th bit is set.
+      if(baud_acc_half_overflow) begin
         // It takes one cycle for logic to detect this counter is null
-        // The counter is therefore initialized to the baud interval - 1
-        baud_cnt_d = cr_acc_incr_i - 1;
+        // The counter is therefore initialized to acc_incr (1 cycle)
+        baud_acc_d = {1'b0, cr_acc_incr_i[15:0]};
         // Initialize the frame size ring counter
         frame_bit_cnt_d[0] = 1'b1;
         // Initialize the parity bit with the parity configuration bit
@@ -145,19 +148,17 @@ always_comb begin : sampling
       end
     end
     DATA: begin
-      if(baud_cnt_q == '0) begin
+      if(baud_acc_overflow) begin
         // When the baud interval has elapsed
-        //   1. reset the baud counter
-        //   2. decrement the frame bit counter
-        //   3. sample the input
-        //   4. update the computed parity
-        baud_cnt_d = cr_acc_incr_i - 1;
+        //   1. decrement the frame bit counter
+        //   1. sample the input
+        //   1. update the computed parity
         frame_bit_cnt_d = {frame_bit_cnt_d[MAX_FRAME_SIZE-1:0], 1'b0};
         frame_d = {uart_rx_qqq, frame_q[10:1]};
         parity_d = parity_q ^ (uart_rx_qqq & (~data_bit_cnt_done_q));
-      end else begin
-        baud_cnt_d = baud_cnt_q - 1;
       end
+      baud_acc_d = {1'b0, baud_acc_q[15:0]} + cr_acc_incr_i;
+
       // Reset the counter as it will not be incremented further
       if(frame_bit_cnt_done) begin
         frame_bit_cnt_d = '0;
@@ -182,8 +183,7 @@ always_ff @(posedge clk_i) begin
     uart_rx_qq      <= 1;
     uart_rx_qqq     <= 1;
 
-    half_baud_cnt_q     <= '0;
-    baud_cnt_q          <= '0;
+    baud_acc_q          <= '0;
     frame_q             <= '0;
     frame_bit_cnt_q     <= '0;
     data_bit_cnt_done_q <=  0;
@@ -197,12 +197,8 @@ always_ff @(posedge clk_i) begin
     uart_rx_qq  <= uart_rx_q;
     uart_rx_qqq <= uart_rx_qq;
 
-    // half baudrate counter used at the start of a frame to
-    // sample the serial signal in the middle of a bit
-    half_baud_cnt_q <= half_baud_cnt_d;
-
     // baudrate counter used to sample the serial signal
-    baud_cnt_q <= baud_cnt_d;
+    baud_acc_q <= baud_acc_d;
 
     // The frame shift register
     frame_q <= frame_d;

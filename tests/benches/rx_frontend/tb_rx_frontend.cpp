@@ -67,8 +67,21 @@ enum StateId {
   S_STOP
 };
 
+typedef struct {
+  uint32_t baudrate;
+  uint32_t data;
+  uint8_t ds;
+  uint8_t p;
+  uint8_t s;
+  uint8_t inject_frame_error;
+  uint8_t inject_parity_error;
+} test_configuration_t;
+
 class TB_Rx_frontend : public Testbench<Vtb_rx_frontend> {
 public:
+  uint32_t accumulator_increment;
+  uint32_t accumulator;
+
   void reset() {
     this->_nop();
 
@@ -87,11 +100,114 @@ public:
     core->cr_ds_i = 0;
     core->cr_p_i = 0;
     core->cr_s_i = 0;
+
+    core->test = 0;
+  }
+  
+  void set_injected_baudrate(uint32_t acc_increment) {
+    this->accumulator_increment = acc_increment;
+    this->accumulator = 0;
   }
 
-  void n_tick(int n) {
-    for(int i = 0; i < n; i++) {
+  uint32_t get_cycles_before_next_accumulator_overflow() {
+    uint32_t cycles = 0;
+    while(this->accumulator < (1 << 16)) {
+      cycles += 1;
+      this->accumulator += this->accumulator_increment;
+    }
+
+    this->accumulator = this->accumulator & ((1 << 16) - 1);
+
+    return cycles;
+  }
+
+  void test_with_injected_frame(test_configuration_t config) {
+    this->core->cr_acc_incr_i = ((double)config.baudrate * (1 << 16)) / 24000000;
+    this->core->cr_ds_i = config.ds;
+    this->core->cr_p_i = config.p;
+    this->core->cr_s_i = config.s;
+
+    this->tick();
+
+    set_injected_baudrate(this->core->cr_acc_incr_i);
+
+    // Send start bit
+    this->core->uart_rx_i = 0;
+
+    uint32_t cycles_to_run = get_cycles_before_next_accumulator_overflow();
+    uint32_t sampling_offset = 0;
+    for(int i = 0; i < cycles_to_run; i++) {
       this->tick();
+
+      // Count the number of cycles before sampling the first bit
+      if(core->tb_rx_frontend->dut->state_q == S_START) {
+        sampling_offset += 1;
+      }
+    }
+    
+    // Send data bits
+    uint32_t num_data_bits = config.ds ? 8 : 7;
+    for(int i = 0; i < num_data_bits; i++) {
+      this->core->uart_rx_i = (config.data >> i) & 1;
+
+      cycles_to_run = get_cycles_before_next_accumulator_overflow();
+      this->n_tick(cycles_to_run);
+    }
+
+    // Send parity bit
+    uint32_t num_parity_bits = config.p ? 1 : 0;
+    uint8_t parity = (config.p == 2) ? 0 : 1;
+    if(config.p) {
+      // Compute parity, starting with either 1 or 0 depending on ODD or EVEN
+      for(int j = 0; j < num_data_bits; j++) {
+        parity ^= (config.data >> j) & 1;
+      }
+
+      this->core->uart_rx_i = parity & 1;
+
+      // Inject a parity error
+      this->core->uart_rx_i ^= config.inject_parity_error; 
+
+      cycles_to_run = get_cycles_before_next_accumulator_overflow();
+      this->n_tick(cycles_to_run);
+    }
+
+    // Send stop bits
+    uint32_t num_stop_bits = config.s ? 2 : 1;
+
+    this->core->uart_rx_i = 1;
+    
+    // Inject a frame error
+    this->core->uart_rx_i ^= config.inject_frame_error;
+
+    for(int i = 0; i < num_stop_bits; i++) {
+      // If this is the last stop bit
+      if(i == (num_stop_bits - 1)) {
+        this->core->test = 1;
+        // Send half of the first cycle + 3 as the used signal is delayed by three
+        // clock cycles. Ceil is as sometimes cycles to run is not equal to the first
+        // cycle which created the sampling offset.
+        // This is done in order to catch the tx_done signal
+        cycles_to_run = get_cycles_before_next_accumulator_overflow();
+        this->n_tick(sampling_offset + 3);
+        this->core->test = 0;
+
+        // Check the result
+        uint32_t stop_bits = config.s ? 3 : 1;
+        uint32_t parity_bit = config.p ? parity : 0;
+        uint32_t data_bits = config.data & ((1 << num_data_bits) - 1);
+        uint32_t expected_frame = (stop_bits << (num_parity_bits + num_data_bits)) | (parity_bit << num_data_bits) | data_bits;
+        this->check(COND_frame,  (core->frame_o == expected_frame));
+        this->check(COND_errors, (core->parity_err_o == config.inject_parity_error) &&
+                                 (core->frame_err_o == config.inject_frame_error));
+        this->check(COND_valid, (core->output_valid_o == 1));
+
+        // Send the remaining of the first stop bit
+        this->n_tick(cycles_to_run - sampling_offset - 3);
+      } else {
+        cycles_to_run = get_cycles_before_next_accumulator_overflow();
+        this->n_tick(cycles_to_run);
+      }
     }
   }
 };
@@ -172,169 +288,19 @@ void tb_rx_frontend_valid_frame_7N1(TB_Rx_frontend * tb) {
   tb->reset();
 
   //`````````````````````````````````
-  //      Set inputs
-  
-  core->cr_acc_incr_i = (65535/4);
-  core->cr_ds_i = 0;
-  core->cr_p_i = 0;
-  core->cr_s_i = 0;
-
-  //=================================
-  //      Tick (1)
-  
-  tb->tick();
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (2-3)
-  
-  tb->n_tick(2);
-
-  //`````````````````````````````````
   //      Checks 
   
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_IDLE));
-  tb->check(COND_valid, (core->output_valid_o == 0));
+  test_configuration_t config = {
+    .baudrate = 25000000,
+    .data = 0b10100101,
+    .ds = 0,
+    .p = 0,
+    .s = 0,
+    .inject_frame_error = 0,
+    .inject_parity_error = 0
+  };
+  tb->test_with_injected_frame(config);
 
-  //=================================
-  //      Tick (4-5)
-  
-  tb->n_tick(2);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_START));
-  tb->check(COND_valid, (core->output_valid_o == 0));
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (6-7)
-  
-  tb->n_tick(2);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_valid, (core->output_valid_o == 0));
-
-  //=================================
-  //      Tick (8-9)
-  
-  tb->n_tick(2);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (10-13)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (14-17)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (18-21)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (22-25)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (26-29)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (30-33)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (34-37)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_valid, (core->output_valid_o == 0));
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (38)
-  
-  tb->n_tick(1);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_frame,  (core->frame_o == 0b10100101));
-  tb->check(COND_errors, (core->parity_err_o == 0) &&
-                         (core->frame_err_o == 0));
-  tb->check(COND_valid, (core->output_valid_o == 1));
-
-  //=================================
-  //      Tick (39-41)
-  
-  tb->n_tick(3);
-
-  //`````````````````````````````````
-  //      Checks 
-  
   //`````````````````````````````````
   //      Formal Checks 
   
@@ -365,178 +331,18 @@ void tb_rx_frontend_valid_frame_7N2(TB_Rx_frontend * tb) {
   tb->reset();
 
   //`````````````````````````````````
-  //      Set inputs
-  
-  core->cr_acc_incr_i = (65535/4);
-  core->cr_ds_i = 0;
-  core->cr_p_i = 0;
-  core->cr_s_i = 1;
-
-  //=================================
-  //      Tick (1)
-  
-  tb->tick();
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (2-3)
-  
-  tb->n_tick(2);
-
-  //`````````````````````````````````
   //      Checks 
   
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_IDLE));
-  tb->check(COND_valid, (core->output_valid_o == 0));
-
-  //=================================
-  //      Tick (4-5)
-  
-  tb->n_tick(2);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_START));
-  tb->check(COND_valid, (core->output_valid_o == 0));
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (6-7)
-  
-  tb->n_tick(2);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_valid, (core->output_valid_o == 0));
-
-  //=================================
-  //      Tick (8-9)
-  
-  tb->n_tick(2);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (10-13)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (14-17)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (18-21)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (22-25)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (26-29)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (30-33)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (34-37)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (38-41)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_valid, (core->output_valid_o == 0));
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (42)
-  
-  tb->n_tick(1);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_frame,  (core->frame_o == 0b110100101));
-  tb->check(COND_errors, (core->parity_err_o == 0) &&
-                         (core->frame_err_o == 0));
-  tb->check(COND_valid, (core->output_valid_o == 1));
-
-  //=================================
-  //      Tick (43-45)
-  
-  tb->n_tick(3);
-
-  //`````````````````````````````````
-  //      Checks 
+  test_configuration_t config = {
+    .baudrate = 25000000,
+    .data = 0b10100101,
+    .ds = 0,
+    .p = 0,
+    .s = 1,
+    .inject_frame_error = 0,
+    .inject_parity_error = 0
+  };
+  tb->test_with_injected_frame(config);
   
   //`````````````````````````````````
   //      Formal Checks 
@@ -568,179 +374,19 @@ void tb_rx_frontend_valid_frame_7E1(TB_Rx_frontend * tb) {
   tb->reset();
 
   //`````````````````````````````````
-  //      Set inputs
-  
-  core->cr_acc_incr_i = (65535/4);
-  core->cr_ds_i = 0;
-  core->cr_p_i = 2;
-  core->cr_s_i = 0;
-
-  //=================================
-  //      Tick (1)
-  
-  tb->tick();
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (2-3)
-  
-  tb->n_tick(2);
-
-  //`````````````````````````````````
   //      Checks 
   
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_IDLE));
-  tb->check(COND_valid, (core->output_valid_o == 0));
+  test_configuration_t config = {
+    .baudrate = 25000000,
+    .data = 0b10100101,
+    .ds = 0,
+    .p = 2,
+    .s = 0,
+    .inject_frame_error = 0,
+    .inject_parity_error = 0
+  };
+  tb->test_with_injected_frame(config);
 
-  //=================================
-  //      Tick (4-5)
-  
-  tb->n_tick(2);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_START));
-  tb->check(COND_valid, (core->output_valid_o == 0));
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (6-7)
-  
-  tb->n_tick(2);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_valid, (core->output_valid_o == 0));
-
-  //=================================
-  //      Tick (8-9)
-  
-  tb->n_tick(2);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (10-13)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (14-17)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (18-21)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (22-25)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (26-29)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (30-33)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (34-37)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (38-41)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_valid, (core->output_valid_o == 0));
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (42)
-  
-  tb->n_tick(1);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_frame,  (core->frame_o == 0b110100101));
-  tb->check(COND_errors, (core->parity_err_o == 0) &&
-                         (core->frame_err_o == 0));
-  tb->check(COND_valid, (core->output_valid_o == 1));
-
-  //=================================
-  //      Tick (43-45)
-  
-  tb->n_tick(3);
-
-  //`````````````````````````````````
-  //      Checks 
-  
   //`````````````````````````````````
   //      Formal Checks 
   
@@ -771,188 +417,18 @@ void tb_rx_frontend_valid_frame_7E2(TB_Rx_frontend * tb) {
   tb->reset();
 
   //`````````````````````````````````
-  //      Set inputs
-  
-  core->cr_acc_incr_i = (65535/4);
-  core->cr_ds_i = 0;
-  core->cr_p_i = 2;
-  core->cr_s_i = 1;
-
-  //=================================
-  //      Tick (1)
-  
-  tb->tick();
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (2-3)
-  
-  tb->n_tick(2);
-
-  //`````````````````````````````````
   //      Checks 
   
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_IDLE));
-  tb->check(COND_valid, (core->output_valid_o == 0));
-
-  //=================================
-  //      Tick (4-5)
-  
-  tb->n_tick(2);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_START));
-  tb->check(COND_valid, (core->output_valid_o == 0));
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (6-7)
-  
-  tb->n_tick(2);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_valid, (core->output_valid_o == 0));
-
-  //=================================
-  //      Tick (8-9)
-  
-  tb->n_tick(2);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (10-13)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (14-17)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (18-21)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (22-25)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (26-29)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (30-33)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (34-37)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (38-41)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (42-45)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_valid, (core->output_valid_o == 0));
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (46)
-  
-  tb->n_tick(1);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_frame,  (core->frame_o == 0b1110100101));
-  tb->check(COND_errors, (core->parity_err_o == 0) &&
-                         (core->frame_err_o == 0));
-  tb->check(COND_valid, (core->output_valid_o == 1));
-
-  //=================================
-  //      Tick (47-49)
-  
-  tb->n_tick(3);
-
-  //`````````````````````````````````
-  //      Checks 
+  test_configuration_t config = {
+    .baudrate = 25000000,
+    .data = 0b10100101,
+    .ds = 0,
+    .p = 2,
+    .s = 1,
+    .inject_frame_error = 0,
+    .inject_parity_error = 0
+  };
+  tb->test_with_injected_frame(config);
   
   //`````````````````````````````````
   //      Formal Checks 
@@ -984,179 +460,19 @@ void tb_rx_frontend_valid_frame_7O1(TB_Rx_frontend * tb) {
   tb->reset();
 
   //`````````````````````````````````
-  //      Set inputs
-  
-  core->cr_acc_incr_i = (65535/4);
-  core->cr_ds_i = 0;
-  core->cr_p_i = 1;
-  core->cr_s_i = 0;
-
-  //=================================
-  //      Tick (1)
-  
-  tb->tick();
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (2-3)
-  
-  tb->n_tick(2);
-
-  //`````````````````````````````````
   //      Checks 
   
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_IDLE));
-  tb->check(COND_valid, (core->output_valid_o == 0));
+  test_configuration_t config = {
+    .baudrate = 25000000,
+    .data = 0b10100101,
+    .ds = 0,
+    .p = 1,
+    .s = 0,
+    .inject_frame_error = 0,
+    .inject_parity_error = 0
+  };
+  tb->test_with_injected_frame(config);
 
-  //=================================
-  //      Tick (4-5)
-  
-  tb->n_tick(2);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_START));
-  tb->check(COND_valid, (core->output_valid_o == 0));
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (6-7)
-  
-  tb->n_tick(2);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_valid, (core->output_valid_o == 0));
-
-  //=================================
-  //      Tick (8-9)
-  
-  tb->n_tick(2);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (10-13)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (14-17)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (18-21)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (22-25)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (26-29)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (30-33)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (34-37)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (38-41)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_valid, (core->output_valid_o == 0));
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (42)
-  
-  tb->n_tick(1);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_frame,  (core->frame_o == 0b100100101));
-  tb->check(COND_errors, (core->parity_err_o == 0) &&
-                         (core->frame_err_o == 0));
-  tb->check(COND_valid, (core->output_valid_o == 1));
-
-  //=================================
-  //      Tick (43-45)
-  
-  tb->n_tick(3);
-
-  //`````````````````````````````````
-  //      Checks 
-  
   //`````````````````````````````````
   //      Formal Checks 
   
@@ -1187,189 +503,19 @@ void tb_rx_frontend_valid_frame_7O2(TB_Rx_frontend * tb) {
   tb->reset();
 
   //`````````````````````````````````
-  //      Set inputs
-  
-  core->cr_acc_incr_i = (65535/4);
-  core->cr_ds_i = 0;
-  core->cr_p_i = 1;
-  core->cr_s_i = 1;
-
-  //=================================
-  //      Tick (1)
-  
-  tb->tick();
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (2-3)
-  
-  tb->n_tick(2);
-
-  //`````````````````````````````````
   //      Checks 
   
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_IDLE));
-  tb->check(COND_valid, (core->output_valid_o == 0));
+  test_configuration_t config = {
+    .baudrate = 25000000,
+    .data = 0b10100101,
+    .ds = 0,
+    .p = 1,
+    .s = 1,
+    .inject_frame_error = 0,
+    .inject_parity_error = 0
+  };
+  tb->test_with_injected_frame(config);
 
-  //=================================
-  //      Tick (4-5)
-  
-  tb->n_tick(2);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_START));
-  tb->check(COND_valid, (core->output_valid_o == 0));
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (6-7)
-  
-  tb->n_tick(2);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_valid, (core->output_valid_o == 0));
-
-  //=================================
-  //      Tick (8-9)
-  
-  tb->n_tick(2);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (10-13)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (14-17)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (18-21)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (22-25)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (26-29)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (30-33)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (34-37)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (38-41)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (42-45)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_valid, (core->output_valid_o == 0));
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (46)
-  
-  tb->n_tick(1);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_frame,  (core->frame_o == 0b1100100101));
-  tb->check(COND_errors, (core->parity_err_o == 0) &&
-                         (core->frame_err_o == 0));
-  tb->check(COND_valid, (core->output_valid_o == 1));
-
-  //=================================
-  //      Tick (47-49)
-  
-  tb->n_tick(3);
-
-  //`````````````````````````````````
-  //      Checks 
-  
   //`````````````````````````````````
   //      Formal Checks 
   
@@ -1400,179 +546,19 @@ void tb_rx_frontend_valid_frame_8N1(TB_Rx_frontend * tb) {
   tb->reset();
 
   //`````````````````````````````````
-  //      Set inputs
-  
-  core->cr_acc_incr_i = (65535/4);
-  core->cr_ds_i = 1;
-  core->cr_p_i = 0;
-  core->cr_s_i = 0;
-
-  //=================================
-  //      Tick (1)
-  
-  tb->tick();
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (2-3)
-  
-  tb->n_tick(2);
-
-  //`````````````````````````````````
   //      Checks 
   
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_IDLE));
-  tb->check(COND_valid, (core->output_valid_o == 0));
+  test_configuration_t config = {
+    .baudrate = 25000000,
+    .data = 0b10100101,
+    .ds = 1,
+    .p = 0,
+    .s = 0,
+    .inject_frame_error = 0,
+    .inject_parity_error = 0
+  };
+  tb->test_with_injected_frame(config);
 
-  //=================================
-  //      Tick (4-5)
-  
-  tb->n_tick(2);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_START));
-  tb->check(COND_valid, (core->output_valid_o == 0));
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (6-7)
-  
-  tb->n_tick(2);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_valid, (core->output_valid_o == 0));
-
-  //=================================
-  //      Tick (8-9)
-  
-  tb->n_tick(2);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (10-13)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (14-17)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (18-21)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (22-25)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (26-29)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (30-33)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (34-37)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (38-41)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_valid, (core->output_valid_o == 0));
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (42)
-  
-  tb->n_tick(1);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_frame,  (core->frame_o == 0b110100101));
-  tb->check(COND_errors, (core->parity_err_o == 0) &&
-                         (core->frame_err_o == 0));
-  tb->check(COND_valid, (core->output_valid_o == 1));
-
-  //=================================
-  //      Tick (43-45)
-  
-  tb->n_tick(3);
-
-  //`````````````````````````````````
-  //      Checks 
-  
   //`````````````````````````````````
   //      Formal Checks 
   
@@ -1603,189 +589,19 @@ void tb_rx_frontend_valid_frame_8N2(TB_Rx_frontend * tb) {
   tb->reset();
 
   //`````````````````````````````````
-  //      Set inputs
-  
-  core->cr_acc_incr_i = (65535/4);
-  core->cr_ds_i = 1;
-  core->cr_p_i = 0;
-  core->cr_s_i = 1;
-
-  //=================================
-  //      Tick (1)
-  
-  tb->tick();
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (2-3)
-  
-  tb->n_tick(2);
-
-  //`````````````````````````````````
   //      Checks 
   
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_IDLE));
-  tb->check(COND_valid, (core->output_valid_o == 0));
+  test_configuration_t config = {
+    .baudrate = 25000000,
+    .data = 0b10100101,
+    .ds = 1,
+    .p = 0,
+    .s = 1,
+    .inject_frame_error = 0,
+    .inject_parity_error = 0
+  };
+  tb->test_with_injected_frame(config);
 
-  //=================================
-  //      Tick (4-5)
-  
-  tb->n_tick(2);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_START));
-  tb->check(COND_valid, (core->output_valid_o == 0));
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (6-7)
-  
-  tb->n_tick(2);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_valid, (core->output_valid_o == 0));
-
-  //=================================
-  //      Tick (8-9)
-  
-  tb->n_tick(2);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (10-13)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (14-17)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (18-21)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (22-25)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (26-29)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (30-33)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (34-37)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (38-41)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (42-45)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_valid, (core->output_valid_o == 0));
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (46)
-  
-  tb->n_tick(1);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_frame,  (core->frame_o == 0b1110100101));
-  tb->check(COND_errors, (core->parity_err_o == 0) &&
-                         (core->frame_err_o == 0));
-  tb->check(COND_valid, (core->output_valid_o == 1));
-
-  //=================================
-  //      Tick (47-49)
-  
-  tb->n_tick(3);
-
-  //`````````````````````````````````
-  //      Checks 
-  
   //`````````````````````````````````
   //      Formal Checks 
   
@@ -1816,189 +632,19 @@ void tb_rx_frontend_valid_frame_8E1(TB_Rx_frontend * tb) {
   tb->reset();
 
   //`````````````````````````````````
-  //      Set inputs
-  
-  core->cr_acc_incr_i = (65535/4);
-  core->cr_ds_i = 1;
-  core->cr_p_i = 2;
-  core->cr_s_i = 0;
-
-  //=================================
-  //      Tick (1)
-  
-  tb->tick();
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (2-3)
-  
-  tb->n_tick(2);
-
-  //`````````````````````````````````
   //      Checks 
   
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_IDLE));
-  tb->check(COND_valid, (core->output_valid_o == 0));
+  test_configuration_t config = {
+    .baudrate = 25000000,
+    .data = 0b10100101,
+    .ds = 1,
+    .p = 2,
+    .s = 0,
+    .inject_frame_error = 0,
+    .inject_parity_error = 0
+  };
+  tb->test_with_injected_frame(config);
 
-  //=================================
-  //      Tick (4-5)
-  
-  tb->n_tick(2);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_START));
-  tb->check(COND_valid, (core->output_valid_o == 0));
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (6-7)
-  
-  tb->n_tick(2);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_valid, (core->output_valid_o == 0));
-
-  //=================================
-  //      Tick (8-9)
-  
-  tb->n_tick(2);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (10-13)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (14-17)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (18-21)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (22-25)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (26-29)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (30-33)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (34-37)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (38-41)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (42-45)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_valid, (core->output_valid_o == 0));
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (46)
-  
-  tb->n_tick(1);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_frame,  (core->frame_o == 0b1010100101));
-  tb->check(COND_errors, (core->parity_err_o == 0) &&
-                         (core->frame_err_o == 0));
-  tb->check(COND_valid, (core->output_valid_o == 1));
-
-  //=================================
-  //      Tick (47-49)
-  
-  tb->n_tick(3);
-
-  //`````````````````````````````````
-  //      Checks 
-  
   //`````````````````````````````````
   //      Formal Checks 
   
@@ -2029,199 +675,19 @@ void tb_rx_frontend_valid_frame_8E2(TB_Rx_frontend * tb) {
   tb->reset();
 
   //`````````````````````````````````
-  //      Set inputs
-  
-  core->cr_acc_incr_i = (65535/4);
-  core->cr_ds_i = 1;
-  core->cr_p_i = 2;
-  core->cr_s_i = 1;
-
-  //=================================
-  //      Tick (1)
-  
-  tb->tick();
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (2-3)
-  
-  tb->n_tick(2);
-
-  //`````````````````````````````````
   //      Checks 
   
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_IDLE));
-  tb->check(COND_valid, (core->output_valid_o == 0));
+  test_configuration_t config = {
+    .baudrate = 25000000,
+    .data = 0b10100101,
+    .ds = 1,
+    .p = 2,
+    .s = 1,
+    .inject_frame_error = 0,
+    .inject_parity_error = 0
+  };
+  tb->test_with_injected_frame(config);
 
-  //=================================
-  //      Tick (4-5)
-  
-  tb->n_tick(2);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_START));
-  tb->check(COND_valid, (core->output_valid_o == 0));
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (6-7)
-  
-  tb->n_tick(2);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_valid, (core->output_valid_o == 0));
-
-  //=================================
-  //      Tick (8-9)
-  
-  tb->n_tick(2);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (10-13)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (14-17)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (18-21)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (22-25)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (26-29)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (30-33)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (34-37)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (38-41)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (42-45)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (46-49)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_valid, (core->output_valid_o == 0));
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (50)
-  
-  tb->n_tick(1);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_frame,  (core->frame_o == 0b11010100101));
-  tb->check(COND_errors, (core->parity_err_o == 0) &&
-                         (core->frame_err_o == 0));
-  tb->check(COND_valid, (core->output_valid_o == 1));
-
-  //=================================
-  //      Tick (51-53)
-  
-  tb->n_tick(3);
-
-  //`````````````````````````````````
-  //      Checks 
-  
   //`````````````````````````````````
   //      Formal Checks 
   
@@ -2252,189 +718,19 @@ void tb_rx_frontend_valid_frame_8O1(TB_Rx_frontend * tb) {
   tb->reset();
 
   //`````````````````````````````````
-  //      Set inputs
-  
-  core->cr_acc_incr_i = (65535/4);
-  core->cr_ds_i = 1;
-  core->cr_p_i = 1;
-  core->cr_s_i = 0;
-
-  //=================================
-  //      Tick (1)
-  
-  tb->tick();
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (2-3)
-  
-  tb->n_tick(2);
-
-  //`````````````````````````````````
   //      Checks 
   
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_IDLE));
-  tb->check(COND_valid, (core->output_valid_o == 0));
+  test_configuration_t config = {
+    .baudrate = 25000000,
+    .data = 0b10100101,
+    .ds = 1,
+    .p = 1,
+    .s = 0,
+    .inject_frame_error = 0,
+    .inject_parity_error = 0
+  };
+  tb->test_with_injected_frame(config);
 
-  //=================================
-  //      Tick (4-5)
-  
-  tb->n_tick(2);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_START));
-  tb->check(COND_valid, (core->output_valid_o == 0));
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (6-7)
-  
-  tb->n_tick(2);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_valid, (core->output_valid_o == 0));
-
-  //=================================
-  //      Tick (8-9)
-  
-  tb->n_tick(2);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (10-13)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (14-17)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (18-21)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (22-25)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (26-29)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (30-33)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (34-37)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (38-41)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (42-45)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_valid, (core->output_valid_o == 0));
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (46)
-  
-  tb->n_tick(1);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_frame,  (core->frame_o == 0b1110100101));
-  tb->check(COND_errors, (core->parity_err_o == 0) &&
-                         (core->frame_err_o == 0));
-  tb->check(COND_valid, (core->output_valid_o == 1));
-
-  //=================================
-  //      Tick (47-49)
-  
-  tb->n_tick(3);
-
-  //`````````````````````````````````
-  //      Checks 
-  
   //`````````````````````````````````
   //      Formal Checks 
   
@@ -2465,199 +761,19 @@ void tb_rx_frontend_valid_frame_8O2(TB_Rx_frontend * tb) {
   tb->reset();
 
   //`````````````````````````````````
-  //      Set inputs
-  
-  core->cr_acc_incr_i = (65535/4);
-  core->cr_ds_i = 1;
-  core->cr_p_i = 1;
-  core->cr_s_i = 1;
-
-  //=================================
-  //      Tick (1)
-  
-  tb->tick();
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (2-3)
-  
-  tb->n_tick(2);
-
-  //`````````````````````````````````
   //      Checks 
   
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_IDLE));
-  tb->check(COND_valid, (core->output_valid_o == 0));
+  test_configuration_t config = {
+    .baudrate = 25000000,
+    .data = 0b10100101,
+    .ds = 1,
+    .p = 1,
+    .s = 1,
+    .inject_frame_error = 0,
+    .inject_parity_error = 0
+  };
+  tb->test_with_injected_frame(config);
 
-  //=================================
-  //      Tick (4-5)
-  
-  tb->n_tick(2);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_START));
-  tb->check(COND_valid, (core->output_valid_o == 0));
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (6-7)
-  
-  tb->n_tick(2);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_valid, (core->output_valid_o == 0));
-
-  //=================================
-  //      Tick (8-9)
-  
-  tb->n_tick(2);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (10-13)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (14-17)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (18-21)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (22-25)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (26-29)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (30-33)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (34-37)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (38-41)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (42-45)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (46-49)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_valid, (core->output_valid_o == 0));
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (50)
-  
-  tb->n_tick(1);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_frame,  (core->frame_o == 0b11110100101));
-  tb->check(COND_errors, (core->parity_err_o == 0) &&
-                         (core->frame_err_o == 0));
-  tb->check(COND_valid, (core->output_valid_o == 1));
-
-  //=================================
-  //      Tick (51-53)
-  
-  tb->n_tick(3);
-
-  //`````````````````````````````````
-  //      Checks 
-  
   //`````````````````````````````````
   //      Formal Checks 
   
@@ -2678,218 +794,6 @@ void tb_rx_frontend_valid_frame_8O2(TB_Rx_frontend * tb) {
       "Failed to implement the valid signal", tb->err_cycles[COND_valid]);
 }
 
-void tb_rx_frontend_baudrate(TB_Rx_frontend * tb) {
-  Vtb_rx_frontend * core = tb->core;
-  core->testcase = T_BAUDRATE;
-
-  //=================================
-  //      Tick (0)
-  
-  tb->reset();
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->cr_acc_incr_i = (65535/100);
-  core->cr_ds_i = 0;
-  core->cr_p_i = 0;
-  core->cr_s_i = 0;
-
-  //=================================
-  //      Tick (1)
-  
-  tb->tick();
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (2-4)
-  
-  tb->n_tick(3); // 3 cycle delay due to metastability countermeasures
-
-  //=================================
-  //      Tick (5)
-  
-  tb->n_tick(1); // 1 cycle delay between idle and start
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_START));
-  tb->check(COND_valid, (core->output_valid_o == 0));
-
-  //=================================
-  //      Tick (6-54)
-  
-  tb->n_tick(49);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_valid, (core->output_valid_o == 0));
-
-  //=================================
-  //      Tick (55-104)
-  
-  tb->n_tick(50);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (105-154)
-  
-  tb->n_tick(50);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_valid, (core->output_valid_o == 0));
-
-  //=================================
-  //      Tick (155-204)
-  
-  tb->n_tick(50);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (205-304)
-  
-  tb->n_tick(100);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (305-404)
-  
-  tb->n_tick(100);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (405-504)
-  
-  tb->n_tick(100);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (505-604)
-  
-  tb->n_tick(100);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (605-704)
-  
-  tb->n_tick(100);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (705-804)
-  
-  tb->n_tick(100);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_valid, (core->output_valid_o == 0));
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (805-854)
-  
-  tb->n_tick(50);
-
-  //=================================
-  //      Tick (855-854)
-  
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_frame,  (core->frame_o == 0b10100101));
-  tb->check(COND_errors, (core->parity_err_o == 0) &&
-                         (core->frame_err_o == 0));
-  tb->check(COND_valid, (core->output_valid_o == 1));
-
-  //=================================
-  //      Tick (955-904)
-  
-  tb->n_tick(50);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (905)
-  
-  tb->n_tick(1);
-
-  //=================================
-  //      Tick (906-954)
-  
-  tb->n_tick(49);
-
-  //`````````````````````````````````
-  //      Formal Checks 
-  
-  CHECK("tb_rx_frontend.baudrate.01",
-      tb->conditions[COND_state],
-      "Failed to implement the state machine", tb->err_cycles[COND_state]);
-
-  CHECK("tb_rx_frontend.baudrate.02",
-      tb->conditions[COND_frame],
-      "Failed to implement the frame output", tb->err_cycles[COND_frame]);
-
-  CHECK("tb_rx_frontend.baudrate.03",
-      tb->conditions[COND_errors],
-      "Failed to implement the errors computation", tb->err_cycles[COND_errors]);
-
-  CHECK("tb_rx_frontend.baudrate.04",
-      tb->conditions[COND_valid],
-      "Failed to implement the valid signal", tb->err_cycles[COND_valid]);
-}
-
 void tb_rx_frontend_parity_even(TB_Rx_frontend * tb) {
   Vtb_rx_frontend * core = tb->core;
   core->testcase = T_PARITY_EVEN;
@@ -2899,240 +803,16 @@ void tb_rx_frontend_parity_even(TB_Rx_frontend * tb) {
   
   tb->reset();
 
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->cr_acc_incr_i = (65535/4);
-  core->cr_ds_i = 0;
-  core->cr_p_i = 2;
-  core->cr_s_i = 0;
-
-  //=================================
-  //      Tick (1)
-  
-  tb->tick();
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (2-5)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (6-9)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (10-13)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (14-17)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (18-21)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (22-25)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (26-29)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (30-33)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (34-37)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (38-39)
-  
-  tb->n_tick(2);
-  
-  //=================================
-  //      Tick (40-42)
-  
-  tb->n_tick(3); // 3 cycle delay due to metastability countermeasures
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_errors, (core->parity_err_o == 0));
-  tb->check(COND_valid,  (core->output_valid_o == 1));
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (43-46)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (47-50)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (51-54)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (55-58)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (59-62)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (63-66)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (67-70)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (71-74)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (75-78)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (79-80)
-  
-  tb->n_tick(2);
-  
-  //=================================
-  //      Tick (81-83)
-  
-  tb->n_tick(3); // 3 cycle delay due to metastability countermeasures
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_errors, (core->parity_err_o == 0));
-  tb->check(COND_valid,  (core->output_valid_o == 1));
+  test_configuration_t config = {
+    .baudrate = 25000000,
+    .data = 0b10100101,
+    .ds = 0,
+    .p = 2,
+    .s = 0,
+    .inject_frame_error = 0,
+    .inject_parity_error = 1
+  };
+  tb->test_with_injected_frame(config);
 
   //`````````````````````````````````
   //      Formal Checks 
@@ -3155,240 +835,16 @@ void tb_rx_frontend_parity_odd(TB_Rx_frontend * tb) {
   
   tb->reset();
 
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->cr_acc_incr_i = (65535/4);
-  core->cr_ds_i = 0;
-  core->cr_p_i = 1;
-  core->cr_s_i = 0;
-
-  //=================================
-  //      Tick (1)
-  
-  tb->tick();
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (2-5)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (6-9)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (10-13)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (14-17)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (18-21)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (22-25)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (26-29)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (30-33)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (34-37)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (38-39)
-  
-  tb->n_tick(2);
-  
-  //=================================
-  //      Tick (40-42)
-  
-  tb->n_tick(3); // 3 cycle delay due to metastability countermeasures
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_errors, (core->parity_err_o == 0));
-  tb->check(COND_valid,  (core->output_valid_o == 1));
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (43-46)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (47-50)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (51-54)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (55-58)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (59-62)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (63-66)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (67-70)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (71-74)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (75-78)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (79-80)
-  
-  tb->n_tick(2);
-  
-  //=================================
-  //      Tick (81-83)
-  
-  tb->n_tick(3); // 3 cycle delay due to metastability countermeasures
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_errors, (core->parity_err_o == 1));
-  tb->check(COND_valid,  (core->output_valid_o == 1));
+  test_configuration_t config = {
+    .baudrate = 25000000,
+    .data = 0b10100101,
+    .ds = 0,
+    .p = 1,
+    .s = 0,
+    .inject_frame_error = 0,
+    .inject_parity_error = 1
+  };
+  tb->test_with_injected_frame(config);
 
   //`````````````````````````````````
   //      Formal Checks 
@@ -3409,165 +865,19 @@ void tb_rx_frontend_framing(TB_Rx_frontend * tb) {
   //=================================
   //      Tick (1)
   
-  tb->tick();
+  tb->reset();
 
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
+  test_configuration_t config = {
+    .baudrate = 25000000,
+    .data = 0b10100101,
+    .ds = 0,
+    .p = 0,
+    .s = 0,
+    .inject_frame_error = 1,
+    .inject_parity_error = 0
+  };
+  tb->test_with_injected_frame(config);
 
-  //=================================
-  //      Tick (2-3)
-  
-  tb->n_tick(2);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_IDLE));
-  tb->check(COND_valid, (core->output_valid_o == 0));
-
-  //=================================
-  //      Tick (4-5)
-  
-  tb->n_tick(2);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_START));
-  tb->check(COND_valid, (core->output_valid_o == 0));
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (6-7)
-  
-  tb->n_tick(2);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_valid, (core->output_valid_o == 0));
-
-  //=================================
-  //      Tick (8-9)
-  
-  tb->n_tick(2);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (10-13)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (14-17)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (18-21)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (22-25)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (26-29)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (30-33)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (34-37)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (38-41)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_state, (core->tb_rx_frontend->dut->state_q == S_DATA));
-  tb->check(COND_valid, (core->output_valid_o == 0));
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 0;
-
-  //=================================
-  //      Tick (42)
-  
-  tb->n_tick(1);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_errors, (core->frame_err_o == 1));
-
-  //=================================
-  //      Tick (43-45)
-  
-  tb->n_tick(3);
-
-  //`````````````````````````````````
-  //      Checks 
-  
   //`````````````````````````````````
   //      Formal Checks 
   
@@ -3584,17 +894,76 @@ void tb_rx_frontend_framing(TB_Rx_frontend * tb) {
       "Failed to implement the valid signal", tb->err_cycles[COND_valid]);
 }
 
+void tb_rx_frontend_baudrate(TB_Rx_frontend * tb) {
+  Vtb_rx_frontend * core = tb->core;
+  core->testcase = T_BAUDRATE;
+
+  tb->reset();
+
+  uint32_t baudrates[] = {
+    4800,
+    9600,
+    19200,
+    38400,
+    57600,
+    115200,
+    230400,
+    460800,
+    921600,
+    1000000,
+    2000000,
+    3000000
+  };
+  size_t num_baudrates = sizeof(baudrates)/sizeof(uint32_t);
+
+  for(size_t i = 0; i < num_baudrates; i++) {
+    test_configuration_t config = {
+      .baudrate = baudrates[i],
+      .data = 0b10100101,
+      .ds = 1,
+      .p = 1,
+      .s = 1,
+      .inject_frame_error = 0,
+      .inject_parity_error = 0
+    };
+    tb->test_with_injected_frame(config);
+  }
+
+  //`````````````````````````````````
+  //      Formal Checks 
+  
+  CHECK("tb_rx_frontend.baudrate.01",
+      tb->conditions[COND_state],
+      "Failed to implement the state machine", tb->err_cycles[COND_state]);
+
+  CHECK("tb_rx_frontend.baudrate.02",
+      tb->conditions[COND_frame],
+      "Failed to implement the frame output", tb->err_cycles[COND_frame]);
+
+  CHECK("tb_rx_frontend.baudrate.03",
+      tb->conditions[COND_errors],
+      "Failed to implement the errors computation", tb->err_cycles[COND_errors]);
+
+  CHECK("tb_rx_frontend.baudrate.04",
+      tb->conditions[COND_valid],
+      "Failed to implement the valid signal", tb->err_cycles[COND_valid]);
+}
+
 int main(int argc, char ** argv, char ** env) {
   srand(time(NULL));
   Verilated::traceEverOn(true);
 
   bool verbose = parse_verbose(argc, argv);
+  verbose = 1;
 
   TB_Rx_frontend * tb = new TB_Rx_frontend;
   tb->open_trace("waves/rx_frontend.vcd");
   tb->open_testdata("testdata/rx_frontend.csv");
   tb->set_debug_log(verbose);
   tb->init_conditions(__CondIdEnd);
+
+  // 24MHz
+  tb->clk_period_in_ps = 41667;
 
   /************************************************************/
 
@@ -3613,11 +982,11 @@ int main(int argc, char ** argv, char ** env) {
   tb_rx_frontend_valid_frame_8O1(tb);
   tb_rx_frontend_valid_frame_8O2(tb);
 
-  tb_rx_frontend_baudrate(tb);
-
   tb_rx_frontend_parity_even(tb);
   tb_rx_frontend_parity_odd(tb);
   tb_rx_frontend_framing(tb);
+
+  tb_rx_frontend_baudrate(tb);
 
   /************************************************************/
 
