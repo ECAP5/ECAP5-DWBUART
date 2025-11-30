@@ -37,7 +37,8 @@ module tb_rx_frontend
   output  logic[10:0]   frame_o,
   output  logic         parity_err_o,
   output  logic         frame_err_o,
-  output  logic         output_valid_o
+  output  logic         output_valid_o,
+  input logic test
 );
 
 rx_frontend dut (
