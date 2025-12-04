@@ -167,7 +167,7 @@ always_comb begin : register_access
   rxdr_rxd_d   = rxdr_rxd_q;
   txdr_txd_d   = txdr_txd_q;
 
-  // Set the data output for R and R/W registers
+  // Set the data output for read requests
   mem_read_data_d = 0;
   case(mem_addr[7:2])
     UART_SR:   mem_read_data_d = {27'b0, sr_pe_q, sr_fe_q, sr_rxoe_q, sr_txe_q, sr_rxne_q};
@@ -176,7 +176,7 @@ always_comb begin : register_access
     default:   mem_read_data_d = '0;
   endcase
 
-  // Set the register data for R/W and W registers
+  // Set the register data for write requests
   if(mem_write) begin
     case(mem_addr[7:2])
       UART_CR: begin
@@ -185,42 +185,41 @@ always_comb begin : register_access
         cr_s_d = mem_write_data[2];
         cr_p_d = mem_write_data[1:0];
       end
-      UART_TXDR: txdr_txd_d = mem_write_data[7:0];
+      UART_TXDR: begin
+        txdr_txd_d = mem_write_data[7:0];
+      end
       default: begin end
     endcase 
   end
 
-  // Set the TXE field
-  if(tx_done) begin
+  // Priority to the memory request
+  if(mem_write && (mem_addr[7:2] == UART_TXDR)) begin
+    sr_txe_d = 0;
+  end else if (tx_done) begin
     sr_txe_d = 1;
   end
 
-  // Reset the TXE field
-  if(mem_write && (mem_addr[7:2] == UART_TXDR)) begin
-    sr_txe_d = 0;
-  end
-
-  // Set the RXDR register and RXNE field
+  // Priority to the hardware
   if(rx_valid) begin
     rxdr_rxd_d = rx_frame[7:0];
     sr_rxne_d = 1;
-  end
 
-  // Reset UART_RXDR after reading
-  if(mem_read && mem_addr[7:2] == UART_RXDR) begin
+    // Errors accumulate so they are never lost
+    sr_pe_d = sr_pe_q | rx_parity_err;
+    sr_fe_d = sr_fe_q | rx_frame_err;
+    
+    // If data was read but the buffer was already full
+    if (sr_rxne_q) begin
+      sr_rxoe_d = 1;
+    end
+  // When the memory request occurs but no data was received
+  // we clear the previously received data
+  end else if(mem_read && mem_addr[7:2] == UART_RXDR) begin
     rxdr_rxd_d = '0;
     sr_rxne_d = 0;
-  end
-
-  // Receive error detection
-  if(rx_valid) begin
-    sr_pe_d = rx_parity_err;
-    sr_fe_d = rx_frame_err;
-    sr_rxoe_d = sr_rxne_q | sr_rxoe_q;
-  end
-
-  // Reset UART_SR error fields after reading UART_SR
-  if(mem_read && mem_addr[7:2] == UART_SR) begin
+  // When the memory request occurs but no data was received
+  // we clear the errors
+  end else if(mem_read && mem_addr[7:2] == UART_SR) begin
     sr_pe_d = 0;
     sr_fe_d = 0;
     sr_rxoe_d = 0;
