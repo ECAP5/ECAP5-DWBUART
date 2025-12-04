@@ -77,7 +77,7 @@ public:
     this->core->wb_stb_i = 0;
     this->core->wb_cyc_i = 0;
 
-    this->core->uart_rx_i = 1;
+//    this->core->uart_rx_i = 1;
   }
 
   void read(uint32_t addr) {
@@ -97,12 +97,6 @@ public:
     this->core->wb_stb_i = 1;
     this->core->wb_cyc_i = 1;
   }
-
-  void n_tick(int n) {
-    for(int i = 0; i < n; i++) {
-      this->tick();
-    }
-  } 
 
   uint32_t uart_sr() {
     uint32_t reg = 0;
@@ -129,31 +123,6 @@ public:
 
   uint32_t uart_txdr() {
     return core->tb_ecap5_dwbuart->dut->txdr_txd_q;
-  }
-
-  void send(uint32_t data, uint32_t acc_incr, uint8_t ds, uint8_t p, uint8_t s, uint8_t inject_pe, uint8_t inject_fe) {
-    // Start bit
-    this->core->uart_rx_i = 0;
-    this->n_tick(acc_incr);
-    // Data bits
-    uint8_t num_data_bits = ds ? 8 : 7;
-    uint8_t parity = p & 0x1;
-    for(int i = 0; i < num_data_bits; i++) {
-      this->core->uart_rx_i = (data >> i) & 0x1;
-      parity ^= (data >> i) & 0x1;
-      this->n_tick(acc_incr);
-    }
-    // Parity bits
-    if(p) {
-      this->core->uart_rx_i = inject_pe ? (parity ^ 1) : 0; 
-      this->n_tick(acc_incr);
-    }
-    // Stop bits
-    uint8_t num_stop_bits = s ? 2 : 1;
-    for(int i = 0; i < num_stop_bits; i++) {
-      this->core->uart_rx_i = !inject_fe;
-      this->n_tick(acc_incr);
-    }
   }
 };
 
@@ -320,7 +289,8 @@ void tb_ecap5_dwbuart_write_txdr(TB_Ecap5_dwbuart * tb) {
   //`````````````````````````````````
   //      Set inputs
 
-  uint32_t cr = (4 << 16) | (1 << 3) | 1;
+  // (2**16)/4 = 16384 = 1 bit every 4 clk cycles
+  uint32_t cr = (16384 << 16) | (1 << 3) | 1;
   tb->write(0x4, cr);
 
   //=================================
@@ -384,56 +354,14 @@ void tb_ecap5_dwbuart_write_txdr(TB_Ecap5_dwbuart * tb) {
   
   tb->_nop();
   core->wb_cyc_i = 0;
-  
-  //=================================
-  //      Tick (6-7)
-  
-  // Wait half acc_incr
-  tb->n_tick(2);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_tx, (core->uart_tx_o == 0));
-  
-  //=================================
-  //      Tick (8-11)
-  
-  tb->n_tick(4);
 
   //=================================
-  //      Tick (11-43)
+  //      Tick (6-49)
   
-  uint8_t expected = 0xA5;
-  for(int i = 0; i < 8; i++) {
-    tb->check(COND_tx, (core->uart_tx_o == ((expected >> i) & 0x1)));
-
-    //=================================
-    //      Tick 
-    
-    tb->n_tick(4);
-  }
-
-  //`````````````````````````````````
-  //      Checks 
+  // 1 start bit, 8 data bits, 1 parity bit, 1 stop bit
+  uint32_t number_of_tx_bits = (1 + 8 + 1 + 1) * 4;
+  tb->n_tick(number_of_tx_bits);
   
-  tb->check(COND_tx, (core->uart_tx_o == 1));
-
-  //=================================
-  //      Tick (44-47)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_tx, (core->uart_tx_o == 1));
-
-  //=================================
-  //      Tick (48-49)
-  
-  tb->n_tick(2);
-
   //`````````````````````````````````
   //      Checks 
   
@@ -482,7 +410,8 @@ void tb_ecap5_dwbuart_read_rxdr(TB_Ecap5_dwbuart * tb) {
   //`````````````````````````````````
   //      Set inputs
 
-  uint32_t cr = (4 << 16) | (1 << 3) | 1;
+  // (2**16)/4 = 16384 = 1 bit every 4 clk cycles
+  uint32_t cr = (16384 << 16) | (1 << 3) | 1;
   tb->write(0x4, cr);
 
   //=================================
@@ -514,86 +443,43 @@ void tb_ecap5_dwbuart_read_rxdr(TB_Ecap5_dwbuart * tb) {
   //`````````````````````````````````
   //      Set inputs
   
-  core->uart_rx_i = 0;
+  tb->write(0xC, 0xA5FA5FA5);
 
   //=================================
-  //      Tick (4-7)
-  
-  tb->n_tick(4);
-
-  //=================================
-  //      Tick (8-39)
-  
-  uint32_t data = 0x5F;
-  for(int i = 0; i < 8; i++) {
-    //`````````````````````````````````
-    //      Set inputs
-    
-    core->uart_rx_i = ((data >> i) & 0x1);
-
-    //=================================
-    //      Tick (...)
-    
-    tb->n_tick(4);
-  }
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (40-43)
-  
-  tb->n_tick(4);
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  core->uart_rx_i = 1;
-
-  //=================================
-  //      Tick (44-47)
-  
-  tb->n_tick(4);
-
-  //=================================
-  //      Tick (48)
+  //      Tick (4)
   
   tb->tick();
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  tb->_nop();
+  core->wb_cyc_i = 1;
+
+  //=================================
+  //      Tick (5)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  tb->_nop();
+  core->wb_cyc_i = 0;
+
+  //=================================
+  //      Tick (6-50)
+  
+  // 1 start bit, 8 data bits, 1 parity bit, 0.5 stop bit
+  // the receive is valid at the half of the stop bit
+  uint32_t number_of_tx_bits = (1 + 8 + 1 + 1 + 0.5) * 4;
+  // This call is shifted by 1 tick from the emission start,
+  tb->n_tick(number_of_tx_bits - 1);
 
   //`````````````````````````````````
   //      Checks 
   
   tb->check(COND_rx, (core->tb_ecap5_dwbuart->dut->rx_valid == 1));
-
-  //=================================
-  //      Tick (49)
-  
-  tb->tick();
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_rx, (core->tb_ecap5_dwbuart->dut->rx_valid == 0));
-  tb->check(COND_registers, (tb->uart_rxdr() == 0x5F) &&
-                            (tb->uart_sr() & 0x1));
-
-  //=================================
-  //      Tick (50)
-  
-  tb->tick();
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_registers, (tb->uart_rxdr() == 0x5F) &&
-                            (tb->uart_sr() & 0x1));
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  tb->read(0x8);
 
   //=================================
   //      Tick (51)
@@ -603,7 +489,37 @@ void tb_ecap5_dwbuart_read_rxdr(TB_Ecap5_dwbuart * tb) {
   //`````````````````````````````````
   //      Checks 
   
-  tb->check(COND_mem, (core->tb_ecap5_dwbuart->dut->mem_read_data_q == 0x5F));
+  tb->check(COND_rx, (core->tb_ecap5_dwbuart->dut->rx_valid == 0));
+  tb->check(COND_registers, (tb->uart_rxdr() == 0xA5) &&
+                            (tb->uart_sr() & 0x1));
+
+  //=================================
+  //      Tick (52)
+  
+  core->probe = 0;
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_registers, (tb->uart_rxdr() == 0xA5) &&
+                            (tb->uart_sr() & 0x1));
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  tb->read(0x8);
+
+  //=================================
+  //      Tick (53)
+  
+  core->probe = 1;
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_mem, (core->tb_ecap5_dwbuart->dut->mem_read_data_q == 0xA5));
   tb->check(COND_registers, (tb->uart_rxdr() == 0) &&
                             ((tb->uart_sr() & 0x1) == 0));
 
@@ -656,7 +572,8 @@ void tb_ecap5_dwbuart_rxoe(TB_Ecap5_dwbuart * tb) {
   //`````````````````````````````````
   //      Set inputs
 
-  uint32_t cr = (4 << 16) | (1 << 3) | 1;
+  // (2**16)/4 = 16384 = 1 bit every 4 clk cycles
+  uint32_t cr = (16384 << 16) | (1 << 3) | 1;
   tb->write(0x4, cr);
 
   //=================================
@@ -685,75 +602,15 @@ void tb_ecap5_dwbuart_rxoe(TB_Ecap5_dwbuart * tb) {
   
   tb->tick();
 
-  //=================================
-  //      Tick (4-47)
-  
-  tb->send(0x5F, 4, 1, 1, 0, 0, 0);
-
-  //=================================
-  //      Tick (48)
-  
-  tb->tick();
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_rx, (core->tb_ecap5_dwbuart->dut->rx_valid == 1));
-
-  //=================================
-  //      Tick (49)
-  
-  tb->tick();
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_rx, (core->tb_ecap5_dwbuart->dut->rx_valid == 0));
-  tb->check(COND_registers, (tb->uart_rxdr() == 0x5F));
-
-  //=================================
-  //      Tick (50-93)
-  
-  tb->send(0xF5, 4, 1, 1, 0, 0, 0);
-
-  //=================================
-  //      Tick (94)
-  
-  tb->tick();
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_rx, (core->tb_ecap5_dwbuart->dut->rx_valid == 1));
-
-  //=================================
-  //      Tick (95)
-  
-  tb->tick();
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_rx, (core->tb_ecap5_dwbuart->dut->rx_valid == 0));
-  tb->check(COND_registers, ((tb->uart_sr() >> 2) & 0x1) &&
-                             (tb->uart_rxdr() == 0xF5));
-
   //`````````````````````````````````
   //      Set inputs
-
-  tb->read(0x8);
+  
+  tb->write(0xC, 0xA5FA5FA5);
 
   //=================================
-  //      Tick (96)
+  //      Tick (4)
   
   tb->tick();
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_mem, (core->tb_ecap5_dwbuart->dut->mem_read_data_q == 0xF5));
-  tb->check(COND_registers, ((tb->uart_sr() >> 2) & 0x1) &&
-                             (tb->uart_rxdr() == 0x0));
 
   //`````````````````````````````````
   //      Set inputs
@@ -762,7 +619,7 @@ void tb_ecap5_dwbuart_rxoe(TB_Ecap5_dwbuart * tb) {
   core->wb_cyc_i = 1;
 
   //=================================
-  //      Tick (97)
+  //      Tick (5)
   
   tb->tick();
 
@@ -770,6 +627,59 @@ void tb_ecap5_dwbuart_rxoe(TB_Ecap5_dwbuart * tb) {
   //      Set inputs
   
   tb->_nop();
+  core->wb_cyc_i = 0;
+
+  //=================================
+  //      Tick (6-50)
+  
+  // 1 start bit, 8 data bits, 1 parity bit, 0.5 stop bit
+  // the receive is valid at the half of the stop bit
+  uint32_t number_of_tx_bits = (1 + 8 + 1 + 1 + 0.5) * 4;
+  // This call is shifted by 1 tick from the emission start,
+  tb->n_tick(number_of_tx_bits - 1);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_rx, (core->tb_ecap5_dwbuart->dut->rx_valid == 1));
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  tb->write(0xC, 0xA5FAA5FA);
+
+  //=================================
+  //      Tick (51)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  tb->_nop();
+  core->wb_cyc_i = 1;
+
+  //=================================
+  //      Tick (52)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  tb->_nop();
+  core->wb_cyc_i = 0;
+
+  //=================================
+  //      Tick (53-97)
+  
+  // This call is shifted by 1 tick from the emission start,
+  tb->n_tick(number_of_tx_bits - 1);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_rx, (core->tb_ecap5_dwbuart->dut->rx_valid == 1));
 
   //=================================
   //      Tick (98)
@@ -777,11 +687,16 @@ void tb_ecap5_dwbuart_rxoe(TB_Ecap5_dwbuart * tb) {
   tb->tick();
 
   //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_rx, (core->tb_ecap5_dwbuart->dut->rx_valid == 0));
+  tb->check(COND_registers, ((tb->uart_sr() >> 2) & 0x1) &&
+                             (tb->uart_rxdr() == 0xFA));
+
+  //`````````````````````````````````
   //      Set inputs
 
-  tb->read(0x0);
-
-  uint32_t sr = tb->uart_sr();
+  tb->read(0x8);
 
   //=================================
   //      Tick (99)
@@ -791,8 +706,9 @@ void tb_ecap5_dwbuart_rxoe(TB_Ecap5_dwbuart * tb) {
   //`````````````````````````````````
   //      Checks 
   
-  tb->check(COND_mem, (core->tb_ecap5_dwbuart->dut->mem_read_data_q == sr));
-  tb->check(COND_registers, (((tb->uart_sr() >> 2) & 0x1) == 0));
+  tb->check(COND_mem, (core->tb_ecap5_dwbuart->dut->mem_read_data_q == 0xFA));
+  tb->check(COND_registers, ((tb->uart_sr() >> 2) & 0x1) &&
+                             (tb->uart_rxdr() == 0x0));
 
   //`````````````````````````````````
   //      Set inputs
@@ -816,6 +732,45 @@ void tb_ecap5_dwbuart_rxoe(TB_Ecap5_dwbuart * tb) {
   tb->tick();
 
   //`````````````````````````````````
+  //      Set inputs
+
+  tb->read(0x0);
+
+  uint32_t sr = tb->uart_sr();
+
+  //=================================
+  //      Tick (102)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_mem, (core->tb_ecap5_dwbuart->dut->mem_read_data_q == sr));
+  tb->check(COND_registers, (((tb->uart_sr() >> 2) & 0x1) == 0));
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  tb->_nop();
+  core->wb_cyc_i = 1;
+
+  //=================================
+  //      Tick (103)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  tb->_nop();
+
+  //=================================
+  //      Tick (104)
+  
+  tb->tick();
+
+  //`````````````````````````````````
   //      Formal Checks 
   
   CHECK("tb_ecap5_dwbuart.rxoe.01",
@@ -827,113 +782,6 @@ void tb_ecap5_dwbuart_rxoe(TB_Ecap5_dwbuart * tb) {
       "Failed to integrate the rx frontend", tb->err_cycles[COND_rx]);
 
   CHECK("tb_ecap5_dwbuart.rxoe.03",
-      tb->conditions[COND_registers],
-      "Failed to implement the memory-mapped registers", tb->err_cycles[COND_registers]);
-}
-
-void tb_ecap5_dwbuart_pe(TB_Ecap5_dwbuart * tb) {
-  Vtb_ecap5_dwbuart * core = tb->core;
-  core->testcase = T_PE;
-
-  //=================================
-  //      Tick (0)
-  
-  tb->reset();
-
-  //`````````````````````````````````
-  //      Set inputs
-
-  uint32_t cr = (4 << 16) | (1 << 3) | 1;
-  tb->write(0x4, cr);
-
-  //=================================
-  //      Tick (1)
-  
-  tb->tick();
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  tb->_nop();
-  core->wb_cyc_i = 1;
-
-  //=================================
-  //      Tick (2)
-  
-  tb->tick();
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  tb->_nop();
-
-  //=================================
-  //      Tick (3)
-  
-  tb->tick();
-
-  //=================================
-  //      Tick (4-47)
-  
-  tb->send(0x5F, 4, 1, 1, 0, 1, 0);
-
-  //=================================
-  //      Tick (48)
-  
-  tb->n_tick(2);
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_registers, (tb->uart_sr() >> 4) & 0x1);
-
-  //`````````````````````````````````
-  //      Set inputs
-
-  tb->read(0x0);
-
-  uint32_t sr = tb->uart_sr();
-
-  //=================================
-  //      Tick (49)
-  
-  tb->tick();
-
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_mem, (core->tb_ecap5_dwbuart->dut->mem_read_data_q == sr));
-  tb->check(COND_registers, (((tb->uart_sr() >> 4) & 0x1) == 0));
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  tb->_nop();
-  core->wb_cyc_i = 1;
-
-  //=================================
-  //      Tick (50)
-  
-  tb->tick();
-
-  //`````````````````````````````````
-  //      Set inputs
-  
-  tb->_nop();
-
-  //=================================
-  //      Tick (51)
-  
-  tb->tick();
-
-  //`````````````````````````````````
-  //      Formal Checks 
-  
-  CHECK("tb_ecap5_dwbuart.pe.01",
-      tb->conditions[COND_mem],
-      "Failed to integrate the memory", tb->err_cycles[COND_mem]);
-
-  CHECK("tb_ecap5_dwbuart.pe.02",
       tb->conditions[COND_registers],
       "Failed to implement the memory-mapped registers", tb->err_cycles[COND_registers]);
 }
@@ -950,7 +798,8 @@ void tb_ecap5_dwbuart_fe(TB_Ecap5_dwbuart * tb) {
   //`````````````````````````````````
   //      Set inputs
 
-  uint32_t cr = (4 << 16) | (1 << 3);
+  // (2**16)/4 = 16384 = 1 bit every 4 clk cycles
+  uint32_t cr = (16384 << 16) | (1 << 3) | 1;
   tb->write(0x4, cr);
 
   //=================================
@@ -979,15 +828,55 @@ void tb_ecap5_dwbuart_fe(TB_Ecap5_dwbuart * tb) {
   
   tb->tick();
 
-  //=================================
-  //      Tick (4-47)
+  //`````````````````````````````````
+  //      Set inputs
   
-  tb->send(0x5F, 4, 1, 0, 0, 0, 1);
+  tb->write(0xC, 0xA5FA5FA5);
 
   //=================================
-  //      Tick (48)
+  //      Tick (4)
   
-  tb->n_tick(2);
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  tb->_nop();
+  core->wb_cyc_i = 1;
+
+  //=================================
+  //      Tick (5)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  tb->_nop();
+  core->wb_cyc_i = 0;
+
+  //=================================
+  //      Tick (6-45)
+  
+  // 1 start bit, 8 data bits, 1 parity bit
+  // the receive is valid at the half of the stop bit
+  uint32_t number_of_tx_bits = (1 + 8 + 1 + 1) * 4;
+  // This call is shifted by 1 tick from the emission start
+  // and we want to be before the sending of the stop bit (3 cycles in advance)
+  tb->n_tick(number_of_tx_bits - 1 - 3);
+
+  //=================================
+  //      Tick (46-50)
+
+  // Inject the frame error
+  core->inj_frame_error = 1;
+  tb->n_tick(3 + 2);
+  core->inj_frame_error = 0;
+
+  //=================================
+  //      Tick (51)
+
+  tb->tick();
 
   //`````````````````````````````````
   //      Checks 
@@ -1045,6 +934,155 @@ void tb_ecap5_dwbuart_fe(TB_Ecap5_dwbuart * tb) {
       "Failed to implement the memory-mapped registers", tb->err_cycles[COND_registers]);
 }
 
+void tb_ecap5_dwbuart_pe(TB_Ecap5_dwbuart * tb) {
+  Vtb_ecap5_dwbuart * core = tb->core;
+  core->testcase = T_PE;
+
+  //=================================
+  //      Tick (0)
+  
+  tb->reset();
+
+  //`````````````````````````````````
+  //      Set inputs
+
+  // (2**16)/4 = 16384 = 1 bit every 4 clk cycles
+  uint32_t cr = (16384 << 16) | (1 << 3) | 1;
+  tb->write(0x4, cr);
+
+  //=================================
+  //      Tick (1)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  tb->_nop();
+  core->wb_cyc_i = 1;
+
+  //=================================
+  //      Tick (2)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  tb->_nop();
+
+  //=================================
+  //      Tick (3)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  tb->write(0xC, 0xA5FA5FA5);
+
+  //=================================
+  //      Tick (4)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  tb->_nop();
+  core->wb_cyc_i = 1;
+
+  //=================================
+  //      Tick (5)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  tb->_nop();
+  core->wb_cyc_i = 0;
+
+  //=================================
+  //      Tick (6-45)
+  
+  // 1 start bit, 8 data bits 
+  uint32_t number_of_tx_bits = (1 + 8 + 1) * 4;
+  // This call is shifted by 1 tick from the emission start
+  // and we want to be before the sending of the parity bit (3 cycles in advance)
+  tb->n_tick(number_of_tx_bits - 1 - 3);
+
+  //=================================
+  //      Tick (46-50)
+
+  // Inject the frame error for 3/4 of a bit
+  core->inj_parity_error = 1;
+  tb->n_tick(3);
+  core->inj_parity_error = 0;
+
+  // Stop injecting and tick for 
+  //   - 1 cycle for 1/4 of the previous bit
+  //   - 2 cycles for half of the stop bit 
+  //   - 1 cycle delay before the register is updated
+  //   - 3 cycles delay due to the input registering
+  tb->n_tick(1 + 2 + 1 + 3);
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_registers, (tb->uart_sr() >> 4) & 0x1);
+
+  //`````````````````````````````````
+  //      Set inputs
+
+  tb->read(0x0);
+
+  uint32_t sr = tb->uart_sr();
+
+  //=================================
+  //      Tick (49)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_mem, (core->tb_ecap5_dwbuart->dut->mem_read_data_q == sr));
+  tb->check(COND_registers, (((tb->uart_sr() >> 3) & 0x1) == 0));
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  tb->_nop();
+  core->wb_cyc_i = 1;
+
+  //=================================
+  //      Tick (50)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Set inputs
+  
+  tb->_nop();
+
+  //=================================
+  //      Tick (51)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Formal Checks 
+  
+  CHECK("tb_ecap5_dwbuart.pe.01",
+      tb->conditions[COND_mem],
+      "Failed to integrate the memory", tb->err_cycles[COND_mem]);
+
+  CHECK("tb_ecap5_dwbuart.pe.02",
+      tb->conditions[COND_registers],
+      "Failed to implement the memory-mapped registers", tb->err_cycles[COND_registers]);
+}
+
 void tb_ecap5_dwbuart_full_duplex(TB_Ecap5_dwbuart * tb) {
   Vtb_ecap5_dwbuart * core = tb->core;
   core->testcase = T_FULL_DUPLEX;
@@ -1084,7 +1122,7 @@ void tb_ecap5_dwbuart_full_duplex(TB_Ecap5_dwbuart * tb) {
   //=================================
   //      tick (3-46)
   
-  tb->send(0xFF, 4, 1, 0, 1, 0, 0);
+//  tb->send(0xFF, 4, 1, 0, 1, 0, 0);
 
   //=================================
   //      tick (47)
@@ -1107,7 +1145,7 @@ void tb_ecap5_dwbuart_full_duplex(TB_Ecap5_dwbuart * tb) {
   tb->_nop();
   core->wb_cyc_i = 1;
 
-  core->uart_rx_i = 0;
+//  core->uart_rx_i = 0;
 
   //=================================
   //      tick (49)
@@ -1132,7 +1170,7 @@ void tb_ecap5_dwbuart_full_duplex(TB_Ecap5_dwbuart * tb) {
     //`````````````````````````````````
     //      Set inputs
     
-    core->uart_rx_i = ((data >> i) & 0x1);
+    //core->uart_rx_i = ((data >> i) & 0x1);
 
     //=================================
     //      Tick (...)
@@ -1143,7 +1181,7 @@ void tb_ecap5_dwbuart_full_duplex(TB_Ecap5_dwbuart * tb) {
   //`````````````````````````````````
   //      Set inputs
   
-  core->uart_rx_i = 0;
+  //core->uart_rx_i = 0;
 
   //=================================
   //      Tick (85-88)
@@ -1153,7 +1191,7 @@ void tb_ecap5_dwbuart_full_duplex(TB_Ecap5_dwbuart * tb) {
   //`````````````````````````````````
   //      Set inputs
   
-  core->uart_rx_i = 0;
+  //core->uart_rx_i = 0;
 
   //=================================
   //      Tick (89-92)
@@ -1204,6 +1242,7 @@ int main(int argc, char ** argv, char ** env) {
   Verilated::traceEverOn(true);
 
   bool verbose = parse_verbose(argc, argv);
+  verbose = 1;
 
   TB_Ecap5_dwbuart * tb = new TB_Ecap5_dwbuart;
   tb->open_trace("waves/ecap5_dwbuart.vcd");
