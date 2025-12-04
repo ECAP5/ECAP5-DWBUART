@@ -43,9 +43,14 @@ module tb_ecap5_dwbuart
   //=================================
   //    Serial interface
   
-  input  logic uart_rx_i,
-  output logic uart_tx_o
+  output logic uart_tx_o,
+  input logic inj_frame_error,
+  input logic inj_parity_error,
+  input logic probe
 );
+
+logic uart_tx;
+logic uart_rx;
 
 ecap5_dwbuart dut (
   .clk_i           (clk_i),
@@ -61,9 +66,12 @@ ecap5_dwbuart dut (
   .wb_cyc_i   (wb_cyc_i),
   .wb_stall_o (wb_stall_o),
 
-  .uart_rx_i       (uart_rx_i),
-  .uart_tx_o       (uart_tx_o)
+  .uart_rx_i       (uart_rx),
+  .uart_tx_o       (uart_tx)
 );
+
+assign uart_tx_o = uart_tx;
+assign uart_rx = ~inj_frame_error & uart_tx ^ inj_parity_error;
 
 endmodule // tb_ecap5_dwbuart
 
