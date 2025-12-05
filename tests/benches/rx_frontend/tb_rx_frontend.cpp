@@ -954,7 +954,6 @@ int main(int argc, char ** argv, char ** env) {
   Verilated::traceEverOn(true);
 
   bool verbose = parse_verbose(argc, argv);
-  verbose = 1;
 
   TB_Rx_frontend * tb = new TB_Rx_frontend;
   tb->open_trace("waves/rx_frontend.vcd");
