@@ -45,8 +45,7 @@ module tb_ecap5_dwbuart
   
   output logic uart_tx_o,
   input logic inj_frame_error,
-  input logic inj_parity_error,
-  input logic probe
+  input logic inj_parity_error
 );
 
 logic uart_tx;

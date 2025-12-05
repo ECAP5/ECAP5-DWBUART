@@ -100,8 +100,6 @@ public:
     core->cr_ds_i = 0;
     core->cr_p_i = 0;
     core->cr_s_i = 0;
-
-    core->test = 0;
   }
   
   void set_injected_baudrate(uint32_t acc_increment) {
@@ -183,14 +181,12 @@ public:
     for(int i = 0; i < num_stop_bits; i++) {
       // If this is the last stop bit
       if(i == (num_stop_bits - 1)) {
-        this->core->test = 1;
         // Send half of the first cycle + 3 as the used signal is delayed by three
         // clock cycles. Ceil is as sometimes cycles to run is not equal to the first
         // cycle which created the sampling offset.
         // This is done in order to catch the tx_done signal
         cycles_to_run = get_cycles_before_next_accumulator_overflow();
         this->n_tick(sampling_offset + 3);
-        this->core->test = 0;
 
         // Check the result
         uint32_t stop_bits = config.s ? 3 : 1;
@@ -291,7 +287,7 @@ void tb_rx_frontend_valid_frame_7N1(TB_Rx_frontend * tb) {
   //      Checks 
   
   test_configuration_t config = {
-    .baudrate = 25000000,
+    .baudrate = 2500000,
     .data = 0b10100101,
     .ds = 0,
     .p = 0,
@@ -334,7 +330,7 @@ void tb_rx_frontend_valid_frame_7N2(TB_Rx_frontend * tb) {
   //      Checks 
   
   test_configuration_t config = {
-    .baudrate = 25000000,
+    .baudrate = 2500000,
     .data = 0b10100101,
     .ds = 0,
     .p = 0,
@@ -377,7 +373,7 @@ void tb_rx_frontend_valid_frame_7E1(TB_Rx_frontend * tb) {
   //      Checks 
   
   test_configuration_t config = {
-    .baudrate = 25000000,
+    .baudrate = 2500000,
     .data = 0b10100101,
     .ds = 0,
     .p = 2,
@@ -420,7 +416,7 @@ void tb_rx_frontend_valid_frame_7E2(TB_Rx_frontend * tb) {
   //      Checks 
   
   test_configuration_t config = {
-    .baudrate = 25000000,
+    .baudrate = 2500000,
     .data = 0b10100101,
     .ds = 0,
     .p = 2,
@@ -463,7 +459,7 @@ void tb_rx_frontend_valid_frame_7O1(TB_Rx_frontend * tb) {
   //      Checks 
   
   test_configuration_t config = {
-    .baudrate = 25000000,
+    .baudrate = 2500000,
     .data = 0b10100101,
     .ds = 0,
     .p = 1,
@@ -506,7 +502,7 @@ void tb_rx_frontend_valid_frame_7O2(TB_Rx_frontend * tb) {
   //      Checks 
   
   test_configuration_t config = {
-    .baudrate = 25000000,
+    .baudrate = 2500000,
     .data = 0b10100101,
     .ds = 0,
     .p = 1,
@@ -549,7 +545,7 @@ void tb_rx_frontend_valid_frame_8N1(TB_Rx_frontend * tb) {
   //      Checks 
   
   test_configuration_t config = {
-    .baudrate = 25000000,
+    .baudrate = 2500000,
     .data = 0b10100101,
     .ds = 1,
     .p = 0,
@@ -592,7 +588,7 @@ void tb_rx_frontend_valid_frame_8N2(TB_Rx_frontend * tb) {
   //      Checks 
   
   test_configuration_t config = {
-    .baudrate = 25000000,
+    .baudrate = 2500000,
     .data = 0b10100101,
     .ds = 1,
     .p = 0,
@@ -635,7 +631,7 @@ void tb_rx_frontend_valid_frame_8E1(TB_Rx_frontend * tb) {
   //      Checks 
   
   test_configuration_t config = {
-    .baudrate = 25000000,
+    .baudrate = 2500000,
     .data = 0b10100101,
     .ds = 1,
     .p = 2,
@@ -678,7 +674,7 @@ void tb_rx_frontend_valid_frame_8E2(TB_Rx_frontend * tb) {
   //      Checks 
   
   test_configuration_t config = {
-    .baudrate = 25000000,
+    .baudrate = 2500000,
     .data = 0b10100101,
     .ds = 1,
     .p = 2,
@@ -721,7 +717,7 @@ void tb_rx_frontend_valid_frame_8O1(TB_Rx_frontend * tb) {
   //      Checks 
   
   test_configuration_t config = {
-    .baudrate = 25000000,
+    .baudrate = 2500000,
     .data = 0b10100101,
     .ds = 1,
     .p = 1,
@@ -764,7 +760,7 @@ void tb_rx_frontend_valid_frame_8O2(TB_Rx_frontend * tb) {
   //      Checks 
   
   test_configuration_t config = {
-    .baudrate = 25000000,
+    .baudrate = 2500000,
     .data = 0b10100101,
     .ds = 1,
     .p = 1,
@@ -804,7 +800,7 @@ void tb_rx_frontend_parity_even(TB_Rx_frontend * tb) {
   tb->reset();
 
   test_configuration_t config = {
-    .baudrate = 25000000,
+    .baudrate = 2500000,
     .data = 0b10100101,
     .ds = 0,
     .p = 2,
@@ -836,7 +832,7 @@ void tb_rx_frontend_parity_odd(TB_Rx_frontend * tb) {
   tb->reset();
 
   test_configuration_t config = {
-    .baudrate = 25000000,
+    .baudrate = 2500000,
     .data = 0b10100101,
     .ds = 0,
     .p = 1,
@@ -868,7 +864,7 @@ void tb_rx_frontend_framing(TB_Rx_frontend * tb) {
   tb->reset();
 
   test_configuration_t config = {
-    .baudrate = 25000000,
+    .baudrate = 2500000,
     .data = 0b10100101,
     .ds = 0,
     .p = 0,
