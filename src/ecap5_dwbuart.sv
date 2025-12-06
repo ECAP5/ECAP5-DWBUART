@@ -21,21 +21,21 @@
  */
 
 module ecap5_dwbuart #(
-  localparam UART_SR   = 0,
-  localparam UART_CR   = 1,
-  localparam UART_RXDR = 2,
-  localparam UART_TXDR = 3,
+  localparam logic[2:0] UART_SR   = 0,
+  localparam logic[2:0] UART_CR   = 1,
+  localparam logic[2:0] UART_RXDR = 2,
+  localparam logic[2:0] UART_TXDR = 3,
 
   // The minimum frame size is :
   //   - 7 data bits
   //   - 1 stop bit
-  localparam MIN_FRAME_SIZE = 8,
+  localparam logic[3:0] MIN_FRAME_SIZE = 8,
   
   // The maximum frame size is :
   //   - 8 data bits
   //   - 1 parity bit
   //   - 2 stop bit
-  localparam MAX_FRAME_SIZE = 11
+  localparam logic[3:0] MAX_FRAME_SIZE = 11
 )(
   input   logic         clk_i,
   input   logic         rst_i,
@@ -169,7 +169,7 @@ always_comb begin : register_access
 
   // Set the data output for read requests
   mem_read_data_d = 0;
-  case(mem_addr[7:2])
+  case(mem_addr[4:2])
     UART_SR:   mem_read_data_d = {27'b0, sr_pe_q, sr_fe_q, sr_rxoe_q, sr_txe_q, sr_rxne_q};
     UART_CR:   mem_read_data_d = {cr_acc_incr_q, 12'b0, cr_ds_q, cr_s_q, cr_p_q};
     UART_RXDR: mem_read_data_d = {24'b0, rxdr_rxd_q};
@@ -178,7 +178,7 @@ always_comb begin : register_access
 
   // Set the register data for write requests
   if(mem_write) begin
-    case(mem_addr[7:2])
+    case(mem_addr[4:2])
       UART_CR: begin
         cr_acc_incr_d = mem_write_data[31:16];
         cr_ds_d = mem_write_data[3];
@@ -193,7 +193,7 @@ always_comb begin : register_access
   end
 
   // Priority to the memory request
-  if(mem_write && (mem_addr[7:2] == UART_TXDR)) begin
+  if(mem_write && (mem_addr[4:2] == UART_TXDR)) begin
     sr_txe_d = 0;
   end else if (tx_done) begin
     sr_txe_d = 1;
@@ -214,12 +214,12 @@ always_comb begin : register_access
     end
   // When the memory request occurs but no data was received
   // we clear the previously received data
-  end else if(mem_read && mem_addr[7:2] == UART_RXDR) begin
+  end else if(mem_read && mem_addr[4:2] == UART_RXDR) begin
     rxdr_rxd_d = '0;
     sr_rxne_d = 0;
   // When the memory request occurs but no data was received
   // we clear the errors
-  end else if(mem_read && mem_addr[7:2] == UART_SR) begin
+  end else if(mem_read && mem_addr[4:2] == UART_SR) begin
     sr_pe_d = 0;
     sr_fe_d = 0;
     sr_rxoe_d = 0;
@@ -228,10 +228,10 @@ end
 
 always_comb begin : frontend_interface
   // Reset the frontends after either a reset or a write to UART_CR
-  frontend_rst = rst_i || (mem_write && mem_addr[7:2] == UART_CR);
+  frontend_rst = rst_i || (mem_write && mem_addr[4:2] == UART_CR);
 
   // Transmit after a write to UART_TXDR
-  tx_transmit_d = mem_write && (mem_addr[7:2] == UART_TXDR);
+  tx_transmit_d = mem_write && (mem_addr[4:2] == UART_TXDR);
 end
 
 always_ff @(posedge clk_i) begin
