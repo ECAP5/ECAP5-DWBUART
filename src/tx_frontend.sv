@@ -21,8 +21,8 @@
  */
 
 module tx_frontend #(
-  parameter MIN_FRAME_SIZE = 8,
-  parameter MAX_FRAME_SIZE = 11
+  parameter logic[3:0] MIN_FRAME_SIZE = 8,
+  parameter logic[3:0] MAX_FRAME_SIZE = 11
 )(
   input   logic         clk_i,
   input   logic         rst_i,
