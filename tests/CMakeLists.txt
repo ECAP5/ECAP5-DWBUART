@@ -29,7 +29,7 @@ set(TESTDATA_DIR ${CMAKE_CURRENT_BINARY_DIR}/)
 # Lint
 add_lint_target(
   TARGET lint
-  LIB    ecap5_dwbmmsc
+  LIB    ecap5_dwbuart
 )
 
 # Add testbenches
