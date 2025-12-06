@@ -21,8 +21,8 @@
  */
 
 module rx_frontend #(
-  parameter MIN_FRAME_SIZE = 8,
-  parameter MAX_FRAME_SIZE = 11
+  parameter logic[3:0] MIN_FRAME_SIZE = 8,
+  parameter logic[3:0] MAX_FRAME_SIZE = 11
 )(
   input   logic         clk_i,
   input   logic         rst_i,
@@ -54,7 +54,7 @@ state_t state_d, state_q;
 logic uart_rx_q, uart_rx_qq, uart_rx_qqq;
 
 logic[16:0] baud_acc_d, baud_acc_q;
-logic baud_acc_half_overflow, baud_acc_overflow;;
+logic baud_acc_half_overflow, baud_acc_overflow;
 
 logic[MAX_FRAME_SIZE:0]  frame_bit_cnt_d, frame_bit_cnt_q;
 
