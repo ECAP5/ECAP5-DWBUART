@@ -69,7 +69,7 @@ logic parity_d, parity_q;
 /*            Output signals             */
 /*****************************************/
 
-logic uart_tx_d;
+logic uart_tx_d, uart_tx_q;
 
 logic done_d, done_q;
 
@@ -212,6 +212,8 @@ always_ff @(posedge clk_i) begin
     parity_q <= 0;
 
     done_q <= 0;
+
+    uart_tx_q <= 1;
   end else begin
     state_q <= state_d;
 
@@ -229,6 +231,8 @@ always_ff @(posedge clk_i) begin
 
     // Asserted to indicate the end of a transmission
     done_q <= done_d;
+
+    uart_tx_q <= uart_tx_d;
   end
 end
 
@@ -236,7 +240,7 @@ end
 /*         Assign output signals         */
 /*****************************************/
 
-assign uart_tx_o = rst_i ? 1 : uart_tx_d;
+assign uart_tx_o = uart_tx_q;
 assign done_o = done_q;
 
 endmodule // tx_frontend
