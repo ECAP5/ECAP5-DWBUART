@@ -575,11 +575,6 @@ void tb_ecap5_dwbuart_read_rxdr(TB_Ecap5_dwbuart * tb) {
   
   tb->tick();
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_rx, (core->tb_ecap5_dwbuart->dut->rx_valid == 1));
-
   //=================================
   //      Tick (51)
   
@@ -588,9 +583,7 @@ void tb_ecap5_dwbuart_read_rxdr(TB_Ecap5_dwbuart * tb) {
   //`````````````````````````````````
   //      Checks 
   
-  tb->check(COND_rx, (core->tb_ecap5_dwbuart->dut->rx_valid == 0));
-  tb->check(COND_registers, (tb->uart_rxdr() == 0xA5) &&
-                            (tb->uart_sr() & 0x1));
+  tb->check(COND_rx, (core->tb_ecap5_dwbuart->dut->rx_valid == 1));
 
   //=================================
   //      Tick (52)
@@ -600,6 +593,7 @@ void tb_ecap5_dwbuart_read_rxdr(TB_Ecap5_dwbuart * tb) {
   //`````````````````````````````````
   //      Checks 
   
+  tb->check(COND_rx, (core->tb_ecap5_dwbuart->dut->rx_valid == 0));
   tb->check(COND_registers, (tb->uart_rxdr() == 0xA5) &&
                             (tb->uart_sr() & 0x1));
 
@@ -676,11 +670,6 @@ void tb_ecap5_dwbuart_rxoe(TB_Ecap5_dwbuart * tb) {
   
   tb->tick();
 
-  //`````````````````````````````````
-  //      Checks 
-  
-  tb->check(COND_rx, (core->tb_ecap5_dwbuart->dut->rx_valid == 1));
-
   //=================================
   //      Tick (98)
   
@@ -689,14 +678,7 @@ void tb_ecap5_dwbuart_rxoe(TB_Ecap5_dwbuart * tb) {
   //`````````````````````````````````
   //      Checks 
   
-  tb->check(COND_rx, (core->tb_ecap5_dwbuart->dut->rx_valid == 0));
-  tb->check(COND_registers, ((tb->uart_sr() >> 2) & 0x1) &&
-                             (tb->uart_rxdr() == 0xFA));
-
-  //`````````````````````````````````
-  //      Set inputs
-
-  tb->read(0x8);
+  tb->check(COND_rx, (core->tb_ecap5_dwbuart->dut->rx_valid == 1));
 
   //=================================
   //      Tick (99)
@@ -706,6 +688,23 @@ void tb_ecap5_dwbuart_rxoe(TB_Ecap5_dwbuart * tb) {
   //`````````````````````````````````
   //      Checks 
   
+  tb->check(COND_registers, ((tb->uart_sr() >> 2) & 0x1) &&
+                             (tb->uart_rxdr() == 0xFA));
+
+  //`````````````````````````````````
+  //      Set inputs
+
+  tb->read(0x8);
+
+  //=================================
+  //      Tick (100)
+  
+  tb->tick();
+
+  //`````````````````````````````````
+  //      Checks 
+  
+  tb->check(COND_rx, (core->tb_ecap5_dwbuart->dut->rx_valid == 0));
   tb->check(COND_mem, (core->tb_ecap5_dwbuart->dut->mem_read_data_q == 0xFA));
   tb->check(COND_registers, ((tb->uart_sr() >> 2) & 0x1) &&
                              (tb->uart_rxdr() == 0x0));
@@ -717,7 +716,7 @@ void tb_ecap5_dwbuart_rxoe(TB_Ecap5_dwbuart * tb) {
   core->wb_cyc_i = 1;
 
   //=================================
-  //      Tick (100)
+  //      Tick (101)
   
   tb->tick();
 
@@ -727,7 +726,7 @@ void tb_ecap5_dwbuart_rxoe(TB_Ecap5_dwbuart * tb) {
   tb->_nop();
 
   //=================================
-  //      Tick (101)
+  //      Tick (102)
   
   tb->tick();
 
@@ -739,7 +738,7 @@ void tb_ecap5_dwbuart_rxoe(TB_Ecap5_dwbuart * tb) {
   uint32_t sr = tb->uart_sr();
 
   //=================================
-  //      Tick (102)
+  //      Tick (103)
   
   tb->tick();
 
@@ -756,7 +755,7 @@ void tb_ecap5_dwbuart_rxoe(TB_Ecap5_dwbuart * tb) {
   core->wb_cyc_i = 1;
 
   //=================================
-  //      Tick (103)
+  //      Tick (104)
   
   tb->tick();
 
@@ -766,7 +765,7 @@ void tb_ecap5_dwbuart_rxoe(TB_Ecap5_dwbuart * tb) {
   tb->_nop();
 
   //=================================
-  //      Tick (104)
+  //      Tick (105)
   
   tb->tick();
 
@@ -805,6 +804,11 @@ void tb_ecap5_dwbuart_fe(TB_Ecap5_dwbuart * tb) {
   
   tb->tick();
 
+  //=================================
+  //      Tick (49)
+  
+  tb->tick();
+
   //`````````````````````````````````
   //      Set inputs
 
@@ -813,7 +817,7 @@ void tb_ecap5_dwbuart_fe(TB_Ecap5_dwbuart * tb) {
   uint32_t sr = tb->uart_sr();
 
   //=================================
-  //      Tick (49)
+  //      Tick (50)
   
   tb->tick();
 
@@ -830,7 +834,7 @@ void tb_ecap5_dwbuart_fe(TB_Ecap5_dwbuart * tb) {
   core->wb_cyc_i = 1;
 
   //=================================
-  //      Tick (50)
+  //      Tick (51)
   
   tb->tick();
 
@@ -840,7 +844,7 @@ void tb_ecap5_dwbuart_fe(TB_Ecap5_dwbuart * tb) {
   tb->_nop();
 
   //=================================
-  //      Tick (51)
+  //      Tick (52)
   
   tb->tick();
 
@@ -958,6 +962,11 @@ void tb_ecap5_dwbuart_error_retention(TB_Ecap5_dwbuart * tb) {
   // Check that every errors is still present
   tb->check(COND_registers, ((tb->uart_sr() >> 2) & 0x7) == 0x7);
 
+  //=================================
+  //      Tick (251)
+  
+  tb->tick();
+
   //`````````````````````````````````
   //      Set inputs
   
@@ -965,7 +974,7 @@ void tb_ecap5_dwbuart_error_retention(TB_Ecap5_dwbuart * tb) {
   uint32_t sr = tb->uart_sr();
 
   //=================================
-  //      Tick (251)
+  //      Tick (252)
   
   tb->tick();
 
@@ -982,7 +991,7 @@ void tb_ecap5_dwbuart_error_retention(TB_Ecap5_dwbuart * tb) {
   core->wb_cyc_i = 1;
 
   //=================================
-  //      Tick (252)
+  //      Tick (253)
   
   tb->tick();
 
@@ -992,7 +1001,7 @@ void tb_ecap5_dwbuart_error_retention(TB_Ecap5_dwbuart * tb) {
   tb->_nop();
 
   //=================================
-  //      Tick (253)
+  //      Tick (254)
   
   tb->tick();
 
@@ -1029,7 +1038,12 @@ void tb_ecap5_dwbuart_race_sr(TB_Ecap5_dwbuart * tb) {
   tb->read(0x0);
 
   //=================================
-  //      Tick (50)
+  //      Tick (51)
+  
+  tb->tick();
+
+  //=================================
+  //      Tick (52)
   
   tb->tick();
 
@@ -1046,7 +1060,7 @@ void tb_ecap5_dwbuart_race_sr(TB_Ecap5_dwbuart * tb) {
   core->wb_cyc_i = 1;
 
   //=================================
-  //      Tick (50)
+  //      Tick (53)
   
   tb->tick();
 
@@ -1056,7 +1070,7 @@ void tb_ecap5_dwbuart_race_sr(TB_Ecap5_dwbuart * tb) {
   tb->_nop();
 
   //=================================
-  //      Tick (51)
+  //      Tick (54)
   
   tb->tick();
   
@@ -1066,7 +1080,7 @@ void tb_ecap5_dwbuart_race_sr(TB_Ecap5_dwbuart * tb) {
   tb->read(0x0);
 
   //=================================
-  //      Tick (49)
+  //      Tick (55)
   
   tb->tick();
 
@@ -1083,7 +1097,7 @@ void tb_ecap5_dwbuart_race_sr(TB_Ecap5_dwbuart * tb) {
   core->wb_cyc_i = 1;
 
   //=================================
-  //      Tick (50)
+  //      Tick (56)
   
   tb->tick();
 
@@ -1093,7 +1107,7 @@ void tb_ecap5_dwbuart_race_sr(TB_Ecap5_dwbuart * tb) {
   tb->_nop();
 
   //=================================
-  //      Tick (51)
+  //      Tick (57)
   
   tb->tick();
 
@@ -1124,13 +1138,18 @@ void tb_ecap5_dwbuart_race_txdr(TB_Ecap5_dwbuart * tb) {
 
   tb->generate_read();
 
+  //=================================
+  //      Tick (50)
+  
+  tb->tick();
+
   //`````````````````````````````````
   //      Set inputs
   
   tb->write(0xC, 0xA5FA5FA5);
 
   //=================================
-  //      Tick (4)
+  //      Tick (51)
   
   tb->tick();
 
@@ -1148,7 +1167,7 @@ void tb_ecap5_dwbuart_race_txdr(TB_Ecap5_dwbuart * tb) {
   core->wb_cyc_i = 1;
 
   //=================================
-  //      Tick (5)
+  //      Tick (52)
   
   tb->tick();
 
@@ -1187,6 +1206,14 @@ void tb_ecap5_dwbuart_race_rxdr(TB_Ecap5_dwbuart * tb) {
 
   tb->generate_read();
 
+  //=================================
+  //      Tick (50)
+  
+  tb->tick();
+
+  //=================================
+  //      Tick (51)
+  
   tb->tick();
 
   //`````````````````````````````````
@@ -1195,7 +1222,7 @@ void tb_ecap5_dwbuart_race_rxdr(TB_Ecap5_dwbuart * tb) {
   tb->read(0x8);
 
   //=================================
-  //      Tick (53)
+  //      Tick (52)
   
   tb->tick();
 
@@ -1212,7 +1239,7 @@ void tb_ecap5_dwbuart_race_rxdr(TB_Ecap5_dwbuart * tb) {
   core->wb_cyc_i = 1;
 
   //=================================
-  //      Tick (52)
+  //      Tick (53)
   
   tb->tick();
 
@@ -1222,7 +1249,7 @@ void tb_ecap5_dwbuart_race_rxdr(TB_Ecap5_dwbuart * tb) {
   tb->_nop();
 
   //=================================
-  //      Tick (53)
+  //      Tick (54)
   
   tb->tick();
 
@@ -1232,7 +1259,7 @@ void tb_ecap5_dwbuart_race_rxdr(TB_Ecap5_dwbuart * tb) {
   tb->read(0x8);
 
   //=================================
-  //      Tick (53)
+  //      Tick (55)
   
   tb->tick();
 
@@ -1250,7 +1277,7 @@ void tb_ecap5_dwbuart_race_rxdr(TB_Ecap5_dwbuart * tb) {
   core->wb_cyc_i = 1;
 
   //=================================
-  //      Tick (52)
+  //      Tick (56)
   
   tb->tick();
 
@@ -1260,7 +1287,7 @@ void tb_ecap5_dwbuart_race_rxdr(TB_Ecap5_dwbuart * tb) {
   tb->_nop();
 
   //=================================
-  //      Tick (53)
+  //      Tick (57)
   
   tb->tick();
 
