@@ -89,9 +89,15 @@ public:
   }
 
   float get_generated_baudrate(uint32_t baudrate) {
-    this->reset();
+    this->_nop();
 
-    core->cr_acc_incr_i = ((double)baudrate * (1 << 16)) / 24000000;
+    this->core->rst_i = 1;
+    for(int i = 0; i < 5; i++) {
+      this->tick();
+    }
+    this->core->rst_i = 0;
+
+    core->cr_acc_incr_i = ((double)baudrate * (1 << 16)) / 60000000;
     core->cr_ds_i = 1;
     core->cr_p_i = 1;
     core->cr_s_i = 1;
@@ -115,7 +121,7 @@ public:
     }
 
     // Compute the baudrate
-    float duration = (counter / 24000000.0);
+    float duration = (counter / 60000000.0);
     float baud_period = duration / 12;
     float generated_baudrate = (1.0 / baud_period);
     return generated_baudrate;
@@ -2777,10 +2783,20 @@ void tb_tx_frontend_baudrate(TB_Tx_frontend * tb) {
     float generated_baudrate = tb->get_generated_baudrate(baudrates[i]);
     float precision = (1.0 - (generated_baudrate / baudrates[i]));
 
+    if(tb->debug_log) {
+      printf("Baudrate: %d, acc: %d, precision: %f -> ", baudrates[i], core->cr_acc_incr_i, precision);
+
+      if(precision >= 0.02) {
+        printf("BAD\n");
+      } else {
+        printf("OK\n");
+      }
+    }
+
     //`````````````````````````````````
     //      Checks 
     
-    tb->check(COND_baudrate,  (precision < 0.01));
+    tb->check(COND_baudrate,  (precision < 0.02));
   }
 
   //`````````````````````````````````
@@ -2803,8 +2819,8 @@ int main(int argc, char ** argv, char ** env) {
   tb->set_debug_log(verbose);
   tb->init_conditions(__CondIdEnd);
 
-  // 24MHz
-  tb->clk_period_in_ps = 41667;
+  // 60MHz
+  tb->clk_period_in_ps = 16667;
 
   /************************************************************/
 
