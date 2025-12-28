@@ -97,7 +97,7 @@ public:
     }
     this->core->rst_i = 0;
 
-    core->cr_acc_incr_i = ((double)baudrate * (1 << 16)) / 60000000;
+    core->cr_acc_incr_i = ((double)baudrate * (1 << 16)) / 78000000;
     core->cr_ds_i = 1;
     core->cr_p_i = 1;
     core->cr_s_i = 1;
@@ -121,7 +121,7 @@ public:
     }
 
     // Compute the baudrate
-    float duration = (counter / 60000000.0);
+    float duration = (counter / 78000000.0);
     float baud_period = duration / 12;
     float generated_baudrate = (1.0 / baud_period);
     return generated_baudrate;
@@ -2819,8 +2819,8 @@ int main(int argc, char ** argv, char ** env) {
   tb->set_debug_log(verbose);
   tb->init_conditions(__CondIdEnd);
 
-  // 60MHz
-  tb->clk_period_in_ps = 16667;
+  // 78MHz
+  tb->clk_period_in_ps = 12821;
 
   /************************************************************/
 
