@@ -16,13 +16,19 @@ tb_ecap5_dwbuart.read_rxdr.03;F_REGISTERS_01;F_READ_01;F_RECEIVE_02;F_RECEIVE_03
 tb_ecap5_dwbuart.rxoe.01
 tb_ecap5_dwbuart.rxoe.02
 tb_ecap5_dwbuart.rxoe.03;F_REGISTERS_01;F_READ_02;F_RECEIVE_ERROR_03
-tb_ecap5_dwbuart.pe.01
-tb_ecap5_dwbuart.pe.02;F_REGISTERS_01;F_READ_02;F_RECEIVE_ERROR_01
 tb_ecap5_dwbuart.fe.01
 tb_ecap5_dwbuart.fe.02;F_REGISTERS_01;F_READ_02;F_RECEIVE_ERROR_02
-tb_ecap5_dwbuart.full_duplex.01;F_UART_04
-tb_ecap5_dwbuart.full_duplex.02;F_UART_04
-tb_ecap5_dwbuart.full_duplex.03;F_REGISTERS_01;F_UART_04
+tb_ecap5_dwbuart.pe.01
+tb_ecap5_dwbuart.pe.02;F_REGISTERS_01;F_READ_02;F_RECEIVE_ERROR_01
+tb_ecap5_dwbuart.error_retention.01
+tb_ecap5_dwbuart.error_retention.02
+tb_ecap5_dwbuart.race_sr.01
+tb_ecap5_dwbuart.race_sr.02
+tb_ecap5_dwbuart.race_txdr.01
+tb_ecap5_dwbuart.race_txdr.02
+tb_ecap5_dwbuart.race_txdr.03
+tb_ecap5_dwbuart.race_rxdr.01
+tb_ecap5_dwbuart.race_rxdr.02
 tb_rx_frontend.idle.01
 tb_rx_frontend.idle.02
 tb_rx_frontend.valid.7N1_01
@@ -73,10 +79,6 @@ tb_rx_frontend.valid.8O2_01
 tb_rx_frontend.valid.8O2_02;F_UART_01;F_UART_02;F_RECEIVE_01
 tb_rx_frontend.valid.8O2_03
 tb_rx_frontend.valid.8O2_04;F_UART_02;F_UART_03;F_RECEIVE_02
-tb_rx_frontend.baudrate.01
-tb_rx_frontend.baudrate.02;F_UART_01;F_UART_02;F_RECEIVE_01
-tb_rx_frontend.baudrate.03
-tb_rx_frontend.baudrate.04;F_UART_02;F_UART_03;F_RECEIVE_02
 tb_rx_frontend.parity.EVEN_01;F_RECEIVE_ERROR_01
 tb_rx_frontend.parity.EVEN_02
 tb_rx_frontend.parity.ODD_01;F_RECEIVE_ERROR_01
@@ -84,9 +86,12 @@ tb_rx_frontend.parity.ODD_02
 tb_rx_frontend.framing.01
 tb_rx_frontend.framing.02;F_RECEIVE_ERROR_02
 tb_rx_frontend.framing.03
+tb_rx_frontend.baudrate.01;U_BAUD_RATE_02
+tb_rx_frontend.baudrate.02;F_UART_01;F_UART_02;F_RECEIVE_01;U_BAUD_RATE_02
+tb_rx_frontend.baudrate.03;U_BAUD_RATE_02
+tb_rx_frontend.baudrate.04;F_UART_02;F_UART_03;F_RECEIVE_02;U_BAUD_RATE_02
 tb_tx_frontend.idle.01
 tb_tx_frontend.idle.02
-tb_tx_frontend.idle.03
 tb_tx_frontend.7N1.01;F_UART_01;F_UART_02;F_TRANSMIT_01
 tb_tx_frontend.7N1.02;F_UART_02;F_UART_03;F_TRANSMIT_01
 tb_tx_frontend.7N2.01;F_UART_01;F_UART_02;F_TRANSMIT_01
@@ -111,14 +116,4 @@ tb_tx_frontend.8O1.01;F_UART_01;F_UART_02;F_TRANSMIT_01
 tb_tx_frontend.8O1.02;F_UART_02;F_UART_03;F_TRANSMIT_01
 tb_tx_frontend.8O2.01;F_UART_01;F_UART_02;F_TRANSMIT_01
 tb_tx_frontend.8O2.02;F_UART_02;F_UART_03;F_TRANSMIT_01
-tb_tx_frontend.baudrate.01
-tb_tx_frontend.baudrate.02;F_UART_01;F_UART_02;F_TRANSMIT_01
-tb_tx_frontend.baudrate.03;F_UART_02;F_UART_03;F_TRANSMIT_01
-tb_wb_interface.reset.01;F_WISHBONE_RESET_01
-tb_wb_interface.reset.02;F_WISHBONE_RESET_02
-tb_wb_interface.read.01;F_WISHBONE_READ_CYCLE_01
-tb_wb_interface.read.02;F_WISHBONE_TRANSFER_CYCLE_01;F_WISHBONE_HANDSHAKE_01;F_WISHBONE_READ_CYCLE_01
-tb_wb_interface.write.01;F_WISHBONE_WRITE_CYCLE_01
-tb_wb_interface.write.02;F_WISHBONE_WRITE_CYCLE_01
-__UNTRACEABLE__;F_WISHBONE_DATASHEET_01;This requirement is covered by the hdl code.
-__UNTRACEABLE__;F_WISHBONE_TIMING_01;This requirement is covered by the hdl code.
+tb_tx_frontend.baudrate.01;U_BAUD_RATE_02
